@@ -1,0 +1,28 @@
+{
+  "name": "xcm-pdf",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "XCM-PDF Editor - Developed for Leto's Angels Educational Project by XcaliburMoon Web Development",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "generate-example": "node generate-example-pdf.js"
+  },
+  "keywords": [
+    "pdf",
+    "editor",
+    "digital-signature",
+    "education"
+  ],
+  "author": "XcaliburMoon Web Development",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^25.0.2",
+    "fabric": "^6.9.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.4.449",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7"
+  }
+}

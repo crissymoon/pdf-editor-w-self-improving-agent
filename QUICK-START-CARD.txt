@@ -1,0 +1,144 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                         XCM-PDF EDITOR                               ║
+║              Leto's Angels Educational Project                       ║
+║           XcaliburMoon Web Development                               ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                      QUICK START CARD                                ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ STEP 1: INSTALL                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│ Windows:        Double-click: install.bat                            │
+│ Mac/Linux:      Terminal: ./install.sh                               │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ STEP 2: GENERATE EXAMPLE PDF                                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ Windows:        Double-click: generate-pdf.bat                       │
+│ Mac/Linux:      Terminal: ./generate-pdf.sh                          │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ STEP 3: RUN APPLICATION                                              │
+├──────────────────────────────────────────────────────────────────────┤
+│ Windows:        Double-click: run.bat                                │
+│ Mac/Linux:      Terminal: ./run.sh                                   │
+│                                                                       │
+│ Opens in browser: http://localhost:5173                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ TOOLBAR TOOLS                                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ Select      - Select and move annotations                            │
+│ Text        - Add text annotations                                   │
+│ Image       - Insert images                                          │
+│ Signature   - Add digital signature                                  │
+│ Highlight   - Highlight text                                         │
+│ Checkbox    - Add checkboxes                                         │
+│ Date        - Insert current date                                    │
+│ Delete      - Remove selected element                                │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ MAIN BUTTONS                                                         │
+├──────────────────────────────────────────────────────────────────────┤
+│ Open PDF    - Load PDF file                                          │
+│ Merge       - Combine multiple PDFs                                  │
+│ Save        - Save edited PDF                                        │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ KEYBOARD SHORTCUTS                                                   │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ctrl/Cmd + O     - Open PDF                                          │
+│ Ctrl/Cmd + S     - Save PDF                                          │
+│ Delete/Backspace - Delete selected                                   │
+│ Arrow Keys       - Move selected                                     │
+│ +/-              - Zoom in/out                                       │
+│ Page Up/Down     - Navigate pages                                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ PRACTICE EXERCISES                                                   │
+├──────────────────────────────────────────────────────────────────────┤
+│ 1. Open: public/example-document.pdf                                 │
+│ 2. Navigate through all 4 pages                                      │
+│ 3. Practice on Page 3 test area                                      │
+│ 4. Complete Page 4 sample form                                       │
+│ 5. Add your signature                                                │
+│ 6. Save your work                                                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTATION                                                        │
+├──────────────────────────────────────────────────────────────────────┤
+│ README.md            - Complete documentation                        │
+│ QUICK-REFERENCE.md   - Quick reference guide                         │
+│ PARTICIPANT-GUIDE.md - Full training guide                           │
+│ FILE-INDEX.md        - Complete file listing                         │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│ Application won't start?                                             │
+│   - Ensure Node.js 16+ is installed                                  │
+│   - Run install script again                                         │
+│   - Check terminal/console for errors                                │
+│                                                                       │
+│ PDF won't load?                                                      │
+│   - Verify file is valid PDF format                                  │
+│   - Try smaller file size                                            │
+│   - Check browser console                                            │
+│                                                                       │
+│ Changes not saving?                                                  │
+│   - Click Save button before closing                                 │
+│   - Check browser download settings                                  │
+│   - Verify write permissions                                         │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ SYSTEM REQUIREMENTS                                                  │
+├──────────────────────────────────────────────────────────────────────┤
+│ - Node.js version 16 or higher                                       │
+│ - Modern web browser (Chrome, Firefox, Safari, Edge)                 │
+│ - 2GB RAM minimum                                                    │
+│ - 100MB free storage space                                           │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ TIPS FOR SUCCESS                                                     │
+├──────────────────────────────────────────────────────────────────────┤
+│ 1. Save your work frequently                                         │
+│ 2. Practice with example PDF first                                   │
+│ 3. Use Select tool to reposition elements                            │
+│ 4. Keep original PDFs as backups                                     │
+│ 5. Verify signed documents after saving                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│ SECURITY FEATURES                                                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ - RSA-PSS cryptographic signing                                      │
+│ - SHA-256 document hashing                                           │
+│ - Client-side encryption (no server upload)                          │
+│ - Signature verification and validation                              │
+│ - Tamper detection for signed documents                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                    SUPPORT INFORMATION                               ║
+╠══════════════════════════════════════════════════════════════════════╣
+║ Developer: XcaliburMoon Web Development                              ║
+║ Project: Leto's Angels Educational Project                           ║
+║ Version: 1.0.0                                                       ║
+║ License: MIT                                                         ║
+║ Date: December 14, 2025                                              ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+        Print this card for quick reference during training!
