@@ -15,16 +15,20 @@ interface ChatMessage {
 }
 
 const STORAGE_KEY = 'xcm_agent_chat_messages_v1';
+const COLLAPSED_KEY = 'xcm_agent_chat_collapsed_v1';
 const MAX_SAVED_MESSAGES = agentChatSettings.maxSavedMessages;
 const CONTEXT_WINDOW = agentChatSettings.contextWindowMessages;
 
 class AgentPanel {
   private panel: HTMLElement | null = null;
+  private bodyEl: HTMLElement | null = null;
   private chatEl: HTMLElement | null = null;
   private inputEl: HTMLTextAreaElement | null = null;
   private statsEl: HTMLElement | null = null;
+  private toggleEl: HTMLButtonElement | null = null;
   private currentAgent: 'main' | 'dbl' = 'main';
   private messages: ChatMessage[] = [];
+  private collapsed = false;
 
   init(architecture: DoubleAgentArchitecture): void {
     if (this.panel) {
@@ -35,7 +39,10 @@ class AgentPanel {
     this.panel.className = 'agent-panel';
     this.panel.innerHTML = `
       <div class="agent-panel-header">
-        <div class="agent-panel-title">Agent Chat</div>
+        <div class="agent-panel-title-row">
+          <div class="agent-panel-title">Agent Chat</div>
+          <button class="agent-toggle" id="agent-toggle" type="button" aria-label="Minimize agent chat" title="Minimize">_</button>
+        </div>
         <div class="agent-panel-subtitle">
           <span>Simple MCP tool chat</span>
           <span class="agent-stats" id="agent-stats"></span>
@@ -65,14 +72,22 @@ class AgentPanel {
 
     document.body.appendChild(this.panel);
 
+    this.bodyEl = this.panel.querySelector('.agent-panel-body');
     this.chatEl = this.panel.querySelector('#agent-chat');
     this.inputEl = this.panel.querySelector('#agent-chat-input') as HTMLTextAreaElement;
     this.statsEl = this.panel.querySelector('#agent-stats');
+    this.toggleEl = this.panel.querySelector('#agent-toggle') as HTMLButtonElement;
 
     const selectEl = this.panel.querySelector('#agent-select') as HTMLSelectElement;
 
     this.messages = this.loadMessages();
     this.renderMessages();
+    this.setCollapsed(this.loadCollapsedState());
+
+    this.toggleEl?.addEventListener('click', () => {
+      this.setCollapsed(!this.collapsed);
+      this.saveCollapsedState();
+    });
 
     selectEl.addEventListener('change', () => {
       this.currentAgent = selectEl.value === 'dbl' ? 'dbl' : 'main';
@@ -298,6 +313,37 @@ class AgentPanel {
       return;
     }
     this.statsEl.textContent = `context: ${CONTEXT_WINDOW} | stored: ${this.messages.length}/${MAX_SAVED_MESSAGES}`;
+  }
+
+  private setCollapsed(collapsed: boolean): void {
+    this.collapsed = collapsed;
+    if (this.panel) {
+      this.panel.classList.toggle('agent-panel-collapsed', collapsed);
+    }
+    if (this.bodyEl) {
+      this.bodyEl.style.display = collapsed ? 'none' : 'flex';
+    }
+    if (this.toggleEl) {
+      this.toggleEl.textContent = collapsed ? '+' : '_';
+      this.toggleEl.setAttribute('aria-label', collapsed ? 'Expand agent chat' : 'Minimize agent chat');
+      this.toggleEl.title = collapsed ? 'Expand' : 'Minimize';
+    }
+  }
+
+  private saveCollapsedState(): void {
+    try {
+      localStorage.setItem(COLLAPSED_KEY, this.collapsed ? '1' : '0');
+    } catch {
+      // best-effort persistence only
+    }
+  }
+
+  private loadCollapsedState(): boolean {
+    try {
+      return localStorage.getItem(COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
   }
 
   private saveMessages(): void {

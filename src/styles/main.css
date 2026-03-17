@@ -904,9 +904,36 @@ html, body {
   border-bottom: var(--glass-border-subtle);
 }
 
+.agent-panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .agent-panel-title {
   font-size: 13px;
   font-weight: 700;
+}
+
+.agent-toggle {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(17, 24, 39, 0.25);
+  color: var(--color-white);
+  border-radius: 5px;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agent-toggle:hover {
+  background: rgba(17, 24, 39, 0.4);
+}
+
+.agent-panel-collapsed {
+  max-height: unset;
 }
 
 .agent-panel-subtitle {
