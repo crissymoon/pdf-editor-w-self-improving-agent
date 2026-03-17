@@ -28,6 +28,11 @@ class PDFEditor {
   private isDragging = false;
   private dragOffsetX = 0;
   private dragOffsetY = 0;
+  private isDrawingHighlight = false;
+  private highlightStartX = 0;
+  private highlightStartY = 0;
+  private activeHighlightColor = '#ffff00';
+  private activeTextColor = '#000000';
   private canvasScale = 1.5;
   private history = new HistoryStack<Annotation[]>();
   private currentFilename = 'document.pdf';
@@ -206,6 +211,9 @@ class PDFEditor {
           <div class="header-subtitle">Leto's Angels Educational Project by XcaliburMoon</div>
         </div>
         <div class="header-actions">
+          <button class="btn btn-secondary" id="btn-new">
+            ${icons.plus} New PDF
+          </button>
           <button class="btn btn-secondary" id="btn-open">
             ${icons.upload} Open PDF
           </button>
@@ -248,7 +256,7 @@ class PDFEditor {
             </div>
 
             <div class="toolbar-group">
-              <button class="btn btn-toolbar" id="tool-highlight" data-tool="highlight" title="Highlight">
+              <button class="btn btn-toolbar" id="tool-highlight" data-tool="highlight" title="Highlight: click and drag to highlight an area">
                 ${icons.highlight}
               </button>
               <button class="btn btn-toolbar" id="tool-checkbox" data-tool="checkbox" title="Checkbox">
@@ -296,6 +304,17 @@ class PDFEditor {
             </div>
           </div>
 
+          <div class="properties-bar" id="properties-bar" hidden>
+            <span class="properties-bar-label" id="properties-bar-label">Color</span>
+            <div class="properties-bar-swatches" id="properties-bar-swatches"></div>
+            <span class="properties-bar-divider" id="properties-bar-divider" hidden></span>
+            <label class="properties-bar-opacity-wrap" id="properties-bar-opacity-wrap" hidden>
+              <span>Opacity</span>
+              <input type="range" id="properties-bar-opacity" min="10" max="80" value="30">
+              <span id="properties-bar-opacity-val">30%</span>
+            </label>
+          </div>
+
           <div class="canvas-wrapper" id="canvas-wrapper">
             <div class="empty-state" id="empty-state">
               <div class="empty-state-icon">
@@ -333,6 +352,7 @@ class PDFEditor {
   }
 
   private setupEventListeners(): void {
+    document.getElementById('btn-new')?.addEventListener('click', () => this.createNewPDF());
     document.getElementById('btn-open')?.addEventListener('click', () => this.openFilePicker());
     document.getElementById('btn-merge')?.addEventListener('click', () => this.openMergeModal());
     document.getElementById('btn-save')?.addEventListener('click', () => this.savePDF());
@@ -371,8 +391,33 @@ class PDFEditor {
     });
 
     document.getElementById('btn-delete')?.addEventListener('click', () => this.deleteSelectedAnnotation());
-  document.getElementById('btn-undo')?.addEventListener('click', () => this.undo());
-  document.getElementById('btn-redo')?.addEventListener('click', () => this.redo());
+    document.getElementById('btn-undo')?.addEventListener('click', () => this.undo());
+    document.getElementById('btn-redo')?.addEventListener('click', () => this.redo());
+
+    document.getElementById('properties-bar')?.addEventListener('click', (e) => {
+      const swatch = (e.target as HTMLElement).closest('[data-prop-color]') as HTMLElement | null;
+      if (swatch) {
+        this.applyColorFromPropertiesBar(swatch.dataset.propColor!);
+      }
+    });
+
+    document.getElementById('properties-bar-opacity')?.addEventListener('input', (e) => {
+      const val = Number((e.target as HTMLInputElement).value);
+      const valEl = document.getElementById('properties-bar-opacity-val');
+      if (valEl) valEl.textContent = `${val}%`;
+      if (this.selectedAnnotation?.type === 'highlight') {
+        this.selectedAnnotation.style = { ...this.selectedAnnotation.style, opacity: val / 100 };
+        this.renderAnnotations();
+        this.scheduleAutosave();
+      }
+    });
+
+    document.getElementById('properties-bar')?.addEventListener('change', (e) => {
+      const input = e.target as HTMLInputElement;
+      if (input.id === 'properties-bar-custom-color') {
+        this.applyColorFromPropertiesBar(input.value);
+      }
+    });
 
     document.getElementById('btn-zoom-in')?.addEventListener('click', () => this.zoomIn());
     document.getElementById('btn-zoom-out')?.addEventListener('click', () => this.zoomOut());
@@ -395,6 +440,19 @@ class PDFEditor {
   private openFilePicker(): void {
     const input = document.getElementById('file-input') as HTMLInputElement;
     input?.click();
+  }
+
+  private async createNewPDF(): Promise<void> {
+    try {
+      toast.info('Creating blank PDF...');
+      const bytes = await pdfService.createBlankPDF(1);
+      const buffer = Uint8Array.from(bytes).buffer as ArrayBuffer;
+      await this.loadPDF(buffer, 'new-document.pdf');
+      toast.success('New blank PDF created');
+    } catch (error) {
+      console.error('Create PDF error:', error);
+      toast.error('Failed to create new PDF');
+    }
   }
 
   private handleFileInput(e: Event): void {
@@ -550,9 +608,20 @@ class PDFEditor {
         annotationLayer.style.cursor = 'crosshair';
       }
     }
+
+    // Deselect when switching tool (except select tool)
+    if (tool && tool !== 'select') {
+      this.selectedAnnotation = null;
+      (document.getElementById('btn-delete') as HTMLButtonElement | null)!.disabled = true;
+    }
+
+    this.updatePropertiesBar();
   }
 
   private handleCanvasClick(e: MouseEvent): void {
+    // Highlight is handled entirely by mousedown/mouseup — skip here
+    if (this.activeTool === 'highlight') return;
+
     if (!this.activeTool || this.activeTool === 'select') {
       this.selectAnnotationAt(e);
       return;
@@ -578,13 +647,13 @@ class PDFEditor {
       case 'date':
         this.addDateAnnotation(x, y);
         break;
-      case 'highlight':
-        break;
     }
   }
 
   private addTextAnnotation(x: number, y: number): void {
     textEditor.open((options) => {
+      // Sync the active text color when the user picks one in the popup
+      this.activeTextColor = options.color;
       const annotation: Annotation = {
         id: crypto.randomUUID(),
         type: 'text',
@@ -605,8 +674,9 @@ class PDFEditor {
       this.annotations.push(annotation);
       this.renderAnnotations();
       this.scheduleAutosave();
+      this.updatePropertiesBar();
       toast.success('Text added');
-    });
+    }, this.activeTextColor);
   }
 
   private addImageAnnotation(x: number, y: number): void {
@@ -850,7 +920,7 @@ class PDFEditor {
 
       case 'highlight': {
         el.style.backgroundColor = annotation.style?.color || '#ffff00';
-        el.style.opacity = '0.3';
+        el.style.opacity = String(annotation.style?.opacity ?? 0.3);
         break;
       }
     }
@@ -871,9 +941,20 @@ class PDFEditor {
 
     (document.getElementById('btn-delete') as HTMLButtonElement).disabled = !this.selectedAnnotation;
     this.renderAnnotations();
+    this.updatePropertiesBar();
   }
 
   private handleMouseDown(e: MouseEvent): void {
+    if (this.activeTool === 'highlight') {
+      const layer = document.getElementById('annotation-layer')!;
+      const rect = layer.getBoundingClientRect();
+      this.highlightStartX = e.clientX - rect.left;
+      this.highlightStartY = e.clientY - rect.top;
+      this.isDrawingHighlight = true;
+      e.preventDefault();
+      return;
+    }
+
     const target = e.target as HTMLElement;
     const annotationEl = target.closest('.annotation') as HTMLElement;
 
@@ -893,6 +974,30 @@ class PDFEditor {
   }
 
   private handleMouseMove(e: MouseEvent): void {
+    if (this.isDrawingHighlight) {
+      const layer = document.getElementById('annotation-layer')!;
+      const rect = layer.getBoundingClientRect();
+      const curX = e.clientX - rect.left;
+      const curY = e.clientY - rect.top;
+      const x = Math.min(this.highlightStartX, curX);
+      const y = Math.min(this.highlightStartY, curY);
+      const w = Math.abs(curX - this.highlightStartX);
+      const h = Math.abs(curY - this.highlightStartY);
+
+      let preview = document.getElementById('highlight-preview');
+      if (!preview) {
+        preview = document.createElement('div');
+        preview.id = 'highlight-preview';
+        layer.appendChild(preview);
+      }
+      preview.style.left = `${x}px`;
+      preview.style.top = `${y}px`;
+      preview.style.width = `${w}px`;
+      preview.style.height = `${h}px`;
+      preview.style.backgroundColor = this.activeHighlightColor;
+      return;
+    }
+
     if (!this.isDragging || !this.selectedAnnotation) return;
 
     const layer = document.getElementById('annotation-layer')!;
@@ -908,10 +1013,49 @@ class PDFEditor {
   }
 
   private handleMouseUp(): void {
+    if (this.isDrawingHighlight) {
+      this.isDrawingHighlight = false;
+      const preview = document.getElementById('highlight-preview');
+      if (preview) {
+        const x = parseFloat(preview.style.left);
+        const y = parseFloat(preview.style.top);
+        const w = parseFloat(preview.style.width);
+        const h = parseFloat(preview.style.height);
+        preview.remove();
+        if (w > 5 && h > 5) {
+          this.addHighlightAnnotation(x, y, w, h);
+        }
+      }
+      return;
+    }
+
     if (this.isDragging) {
       this.scheduleAutosave();
     }
     this.isDragging = false;
+  }
+
+  private addHighlightAnnotation(screenX: number, screenY: number, screenW: number, screenH: number): void {
+    const annotation: Annotation = {
+      id: crypto.randomUUID(),
+      type: 'highlight',
+      pageIndex: this.currentPage - 1,
+      x: screenX / this.zoom / this.canvasScale,
+      y: screenY / this.zoom / this.canvasScale,
+      width: screenW / this.zoom,
+      height: screenH / this.zoom,
+      content: '',
+      style: {
+        color: this.activeHighlightColor,
+        opacity: 0.3,
+      },
+    };
+
+    this.snapshotAnnotations();
+    this.annotations.push(annotation);
+    this.renderAnnotations();
+    this.scheduleAutosave();
+    toast.success('Highlight added');
   }
 
   private deleteSelectedAnnotation(): void {
@@ -958,6 +1102,91 @@ class PDFEditor {
     const redoBtn = document.getElementById('btn-redo') as HTMLButtonElement | null;
     if (undoBtn) undoBtn.disabled = !this.history.canUndo;
     if (redoBtn) redoBtn.disabled = !this.history.canRedo;
+  }
+
+  private updatePropertiesBar(): void {
+    const bar = document.getElementById('properties-bar');
+    const label = document.getElementById('properties-bar-label');
+    const swatchContainer = document.getElementById('properties-bar-swatches');
+    const opacityWrap = document.getElementById('properties-bar-opacity-wrap') as HTMLElement | null;
+    if (!bar || !label || !swatchContainer) return;
+
+    const sel = this.selectedAnnotation;
+    const isHighlightContext =
+      this.activeTool === 'highlight' ||
+      (sel?.type === 'highlight');
+    const isTextContext =
+      this.activeTool === 'text' ||
+      (sel?.type === 'text' || sel?.type === 'date');
+
+    const visible = isHighlightContext || isTextContext;
+    bar.hidden = !visible;
+    if (!visible) return;
+
+    const highlightSwatches = [
+      { color: '#ffff00', label: 'Yellow' },
+      { color: '#90ee90', label: 'Green' },
+      { color: '#add8e6', label: 'Blue' },
+      { color: '#ffb6c1', label: 'Pink' },
+      { color: '#ffa500', label: 'Orange' },
+      { color: '#dda0dd', label: 'Plum' },
+      { color: '#ff6b6b', label: 'Coral' },
+      { color: '#b0e0e6', label: 'Powder Blue' },
+    ];
+    const textSwatches = [
+      { color: '#000000', label: 'Black' },
+      { color: '#1f2937', label: 'Dark' },
+      { color: '#4b5563', label: 'Gray' },
+      { color: '#7c3aed', label: 'Purple' },
+      { color: '#2563eb', label: 'Blue' },
+      { color: '#059669', label: 'Green' },
+      { color: '#dc2626', label: 'Red' },
+      { color: '#d97706', label: 'Amber' },
+    ];
+
+    const swatches = isHighlightContext ? highlightSwatches : textSwatches;
+    const activeColor = isHighlightContext
+      ? (sel?.type === 'highlight' ? (sel.style?.color ?? this.activeHighlightColor) : this.activeHighlightColor)
+      : (sel ? (sel.style?.color ?? this.activeTextColor) : this.activeTextColor);
+
+    label.textContent = isHighlightContext ? 'Highlight color' : sel ? 'Text color' : 'Text color';
+
+    swatchContainer.innerHTML = swatches
+      .map(
+        (s) =>
+          `<button class="properties-bar-swatch${s.color === activeColor ? ' active' : ''}" data-prop-color="${s.color}" title="${s.label}" style="background:${s.color};"></button>`,
+      )
+      .join('') +
+      `<input type="color" id="properties-bar-custom-color" class="properties-bar-custom-color" value="${activeColor}" title="Custom color">`;
+
+    if (opacityWrap) {
+      const showOpacity = isHighlightContext;
+      opacityWrap.hidden = !showOpacity;
+      if (showOpacity && sel?.type === 'highlight') {
+        const opInput = document.getElementById('properties-bar-opacity') as HTMLInputElement | null;
+        const opVal = document.getElementById('properties-bar-opacity-val');
+        const pct = Math.round((sel.style?.opacity ?? 0.3) * 100);
+        if (opInput) opInput.value = String(pct);
+        if (opVal) opVal.textContent = `${pct}%`;
+      }
+    }
+  }
+
+  private applyColorFromPropertiesBar(color: string): void {
+    const sel = this.selectedAnnotation;
+    if (sel?.type === 'highlight' || sel?.type === 'text' || sel?.type === 'date') {
+      this.snapshotAnnotations();
+      sel.style = { ...sel.style, color };
+      this.renderAnnotations();
+      this.scheduleAutosave();
+    }
+    if (this.activeTool === 'highlight' || sel?.type === 'highlight') {
+      this.activeHighlightColor = color;
+    }
+    if (this.activeTool === 'text' || sel?.type === 'text' || sel?.type === 'date') {
+      this.activeTextColor = color;
+    }
+    this.updatePropertiesBar();
   }
 
   private scheduleAutosave(): void {

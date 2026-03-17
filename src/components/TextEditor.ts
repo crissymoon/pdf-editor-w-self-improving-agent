@@ -11,11 +11,11 @@ export interface TextOptions {
 export class TextEditor {
   private modal: HTMLElement | null = null;
   private onSave: ((options: TextOptions) => void) | null = null;
-  private initialText: string = '';
+  private initialColor: string = '#000000';
 
-  open(callback: (options: TextOptions) => void, initialText: string = ''): void {
+  open(callback: (options: TextOptions) => void, initialColor: string = '#000000'): void {
     this.onSave = callback;
-    this.initialText = initialText;
+    this.initialColor = initialColor;
     this.createModal();
   }
 
@@ -31,7 +31,7 @@ export class TextEditor {
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Text</label>
-            <textarea class="form-input" id="text-content" rows="4" placeholder="Enter your text here...">${this.initialText}</textarea>
+            <textarea class="form-input" id="text-content" rows="4" placeholder="Enter your text here..."></textarea>
           </div>
 
           <div class="form-group">
@@ -63,7 +63,7 @@ export class TextEditor {
           <div class="form-group">
             <label class="form-label">Color</label>
             <div class="color-picker" id="text-color-picker">
-              <div class="color-option active" data-color="#000000" style="background-color: #000000;"></div>
+              <div class="color-option" data-color="#000000" style="background-color: #000000;"></div>
               <div class="color-option" data-color="#1f2937" style="background-color: #1f2937;"></div>
               <div class="color-option" data-color="#374151" style="background-color: #374151;"></div>
               <div class="color-option" data-color="#6b7280" style="background-color: #6b7280;"></div>
@@ -83,6 +83,14 @@ export class TextEditor {
 
     document.body.appendChild(this.modal);
     this.setupEventListeners();
+
+    // Pre-select the swatch matching initialColor, or first swatch as fallback
+    const colorPicker = this.modal.querySelector('#text-color-picker');
+    if (colorPicker) {
+      const match = colorPicker.querySelector<HTMLElement>(`[data-color="${this.initialColor}"]`);
+      const target = match ?? colorPicker.querySelector<HTMLElement>('.color-option');
+      target?.classList.add('active');
+    }
 
     const textarea = this.modal.querySelector('#text-content') as HTMLTextAreaElement;
     textarea.focus();
