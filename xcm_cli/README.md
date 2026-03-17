@@ -25,6 +25,17 @@ node xcm_cli/xcm.mjs code review server
 node xcm_cli/xcm.mjs push
 node xcm_cli/xcm.mjs push:shared
 node xcm_cli/xcm.mjs sync:shared
+node xcm_cli/xcm.mjs sync:auto
+```
+
+Auto-commit flag (primary repo only, never linked repos):
+
+```bash
+# Accepts --auto-commit and optional --message flags directly via npm:
+npm run sync:shared -- --auto-commit --message "feat: my change"
+
+# Or use the xcm:auto command which passes --auto-commit automatically:
+node xcm_cli/xcm.mjs sync:auto
 ```
 
 ## Groups

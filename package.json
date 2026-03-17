@@ -35,6 +35,7 @@
     "pack:linux": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux AppImage",
     "push:shared": "node scripts/git/push-shared-repos.mjs",
     "sync:shared": "node scripts/git/push-shared-repos.mjs",
+    "sync:shared:auto": "node scripts/git/push-shared-repos.mjs --auto-commit",
     "docker:test:linux": "docker compose -f docker/docker-compose.electron.yml --profile linux run --rm electron-linux",
     "docker:test:windows": "docker compose -f docker/docker-compose.electron.yml --profile windows run --rm electron-windows",
     "docker:test:macos": "docker compose -f docker/docker-compose.electron.yml --profile macos run --rm electron-macos-check",

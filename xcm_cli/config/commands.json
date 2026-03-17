@@ -141,6 +141,13 @@
       "summary": "Preflight-check, preview pending commits, push both repos, then print summary",
       "action": "npm",
       "script": "sync:shared"
+    },
+    {
+      "name": "sync:auto",
+      "aliases": ["sync auto", "sync:shared:auto", "push:auto"],
+      "summary": "Auto-commit staged changes in primary repo, then sync and push both repos",
+      "action": "npm",
+      "script": "sync:shared:auto"
     }
   ],
   "groups": [

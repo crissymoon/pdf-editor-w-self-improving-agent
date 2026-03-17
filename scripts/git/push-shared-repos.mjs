@@ -9,9 +9,20 @@ const rootRepo = path.resolve(__dirname, '..', '..');
 const linkedRepo = path.resolve(rootRepo, process.env.XCM_AUTH_PATH || 'xcm_auth');
 
 const repos = [
-  { name: 'pdf-editor', dir: rootRepo },
-  { name: 'xcm_auth (linked)', dir: linkedRepo },
+  { name: 'pdf-editor', dir: rootRepo, canAutoCommit: true },
+  { name: 'xcm_auth (linked)', dir: linkedRepo, canAutoCommit: false },
 ];
+
+// Parse flags from argv.
+// --auto-commit         Stage all changes in the primary repo and commit before sync.
+// --message "some text" Commit message to use when --auto-commit is set.
+//                       Defaults to "chore: auto-commit before sync".
+const argv = process.argv.slice(2);
+const autoCommit = argv.includes('--auto-commit');
+const msgIdx = argv.findIndex((a) => a === '--message' || a === '-m');
+const autoCommitMessage = msgIdx !== -1 && argv[msgIdx + 1]
+  ? argv[msgIdx + 1]
+  : 'chore: auto-commit before sync';
 
 function runGit(repoDir, args, { allowFail = false } = {}) {
   const result = spawnSync('git', args, {
@@ -80,12 +91,25 @@ function push(repoDir, branch) {
   return runGit(repoDir, ['push', '-u', 'origin', branch]);
 }
 
+function autoCommitRepo(repoDir, message) {
+  if (!getDirty(repoDir)) {
+    return false; // nothing to commit
+  }
+  runGit(repoDir, ['add', '-A']);
+  runGit(repoDir, ['commit', '-m', message]);
+  return true;
+}
+
 function summarizeResult(result) {
   return `[summary] ${result.name}: ${result.state}`;
 }
 
 const results = [];
 let hadError = false;
+
+if (autoCommit) {
+  console.log(`[shared-sync] auto-commit mode: message = "${autoCommitMessage}"`);
+}
 
 console.log('[shared-sync] preflight checks');
 
@@ -104,6 +128,16 @@ for (const repo of repos) {
       console.log(`[skip] ${repo.name}: detached HEAD`);
       results.push({ name: repo.name, state });
       continue;
+    }
+
+    // Auto-commit only for repos that opted in, and only when the flag was given.
+    if (autoCommit && repo.canAutoCommit) {
+      const committed = autoCommitRepo(repo.dir, autoCommitMessage);
+      if (committed) {
+        console.log(`[auto-commit] ${repo.name}: staged and committed on ${branch}`);
+      } else {
+        console.log(`[auto-commit] ${repo.name}: working tree already clean, nothing to commit`);
+      }
     }
 
     if (getDirty(repo.dir)) {
