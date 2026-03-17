@@ -35,3 +35,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Local shared repository link
+xcm_auth/

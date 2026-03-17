@@ -211,6 +211,22 @@ npm run agent:promote
 - Project summary: `docs/PROJECT-SUMMARY.md`
 - Printable quick start card: `docs/QUICK-START-CARD.txt`
 
+## Shared Auth Repository Link
+
+This project is intended to share authentication and server-management building blocks with:
+
+- `https://github.com/crissymoon/Live-CSS-Editor.git`
+
+Local setup in this workspace links `xcm_auth` to:
+
+- `C:\Users\criss\Desktop\dev_tools\page-builder\xcm_auth`
+
+Use the shared push helper to push both repos in one step when they are clean and have commits ready:
+
+```bash
+npm run push:shared
+```
+
 ## Code Review
 
 The repository includes a coding requirements review toolkit under `code_review/`.

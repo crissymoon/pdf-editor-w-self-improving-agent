@@ -127,6 +127,13 @@
           "summary": "Print git push command and exit"
         }
       ]
+    },
+    {
+      "name": "push:shared",
+      "aliases": ["push shared", "sync:push", "push:both"],
+      "summary": "Push this repo and linked shared repo when clean and ahead",
+      "action": "npm",
+      "script": "push:shared"
     }
   ],
   "groups": [
