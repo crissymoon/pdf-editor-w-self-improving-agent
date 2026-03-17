@@ -1,0 +1,24 @@
+line-length = 100
+target-version = "py311"
+
+exclude = [
+  "node_modules",
+  "dist",
+  "release",
+  "email_smoke",
+  "pdf_tests/generated",
+  "pdf_tests/generated_quick",
+  "mobile/.dart_tool",
+  "mobile/build",
+  "mobile/ios/Flutter/ephemeral",
+  "mobile/ios/Pods",
+  "mobile/android/.gradle",
+  "__pycache__",
+]
+
+[lint]
+select = ["E", "F", "I", "UP"]
+
+[format]
+quote-style = "single"
+indent-style = "space"

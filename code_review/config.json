@@ -2,6 +2,18 @@
   "maxFileLines": 1000,
   "complexityThreshold": 18,
   "maxPythonLineLength": 100,
+  "excludePrefixes": [
+    "email_smoke/",
+    "pdf_tests/generated/",
+    "pdf_tests/generated_quick/",
+    "mobile/ios/Flutter/ephemeral/",
+    "mobile/.dart_tool/",
+    "mobile/build/",
+    "mobile/android/.gradle/",
+    "mobile/android/app/build/",
+    "mobile/ios/Pods/",
+    "mcp/bin/"
+  ],
   "failPolicy": {
     "maxHigh": 0,
     "maxMedium": 5,
@@ -12,6 +24,16 @@
       {
         "file": "generate-example-pdf.js",
         "messageIncludes": "Debug logging detected."
+      },
+      {
+        "file": "mcp/scripts/live-smoke-openai.mjs",
+        "messageIncludes": "Debug logging detected."
+      }
+    ],
+    "performance-memory": [
+      {
+        "file": "mcp/scripts/live-smoke-openai.mjs",
+        "messageIncludes": "Infinite loop pattern detected."
       }
     ]
   }

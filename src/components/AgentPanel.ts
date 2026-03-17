@@ -47,7 +47,7 @@ class AgentPanel {
 
     this.panel = document.createElement('aside');
     this.panel.className = 'agent-panel';
-    this.panel.innerHTML = `
+    this.appendStaticMarkup(this.panel, `
       <div class="agent-panel-header">
         <div class="agent-panel-header-left">
           <div class="agent-panel-bot-icon" aria-hidden="true">
@@ -96,7 +96,7 @@ class AgentPanel {
           <span class="agent-hint-text">Shift+Enter for newline</span>
         </div>
       </div>
-    `;
+    `);
 
     document.body.appendChild(this.panel);
 
@@ -104,7 +104,10 @@ class AgentPanel {
     fab.className = 'agent-panel-fab';
     fab.setAttribute('aria-label', 'Open agent chat');
     fab.title = 'Agent Chat';
-    fab.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+    this.appendStaticMarkup(
+      fab,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    );
     document.body.appendChild(fab);
     this.fabEl = fab;
 
@@ -429,62 +432,122 @@ class AgentPanel {
       return;
     }
 
-    this.chatEl.innerHTML = this.messages
-      .map((entry) => {
-        if (entry.messageType === 'pending-approval' && entry.pendingCall) {
-          return this.renderApprovalCard(entry);
-        }
-        if (entry.messageType === 'cancelled') {
-          return this.renderCancelledCard(entry);
-        }
-        const roleLabel = entry.role === 'assistant' ? 'Agent' : entry.role === 'user' ? 'You' : 'System';
-        const safeText = this.escapeHtml(entry.text);
-        const toolTag = entry.toolName
-          ? `<span class="agent-chat-tool-tag">${this.escapeHtml(entry.toolName)}</span>`
-          : '';
-        return `
-          <div class="agent-chat-message agent-chat-message-${entry.role}">
-            <div class="agent-chat-meta">${roleLabel}${toolTag}</div>
-            <div class="agent-chat-bubble">${safeText}</div>
-          </div>
-        `;
-      })
-      .join('');
+    const fragment = document.createDocumentFragment();
+    for (const entry of this.messages) {
+      if (entry.messageType === 'pending-approval' && entry.pendingCall) {
+        fragment.appendChild(this.renderApprovalCard(entry));
+        continue;
+      }
+      if (entry.messageType === 'cancelled') {
+        fragment.appendChild(this.renderCancelledCard(entry));
+        continue;
+      }
+
+      const roleLabel = entry.role === 'assistant' ? 'Agent' : entry.role === 'user' ? 'You' : 'System';
+      const wrapper = document.createElement('div');
+      wrapper.className = `agent-chat-message agent-chat-message-${entry.role}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'agent-chat-meta';
+      meta.append(roleLabel);
+
+      if (entry.toolName) {
+        const toolTag = document.createElement('span');
+        toolTag.className = 'agent-chat-tool-tag';
+        toolTag.textContent = entry.toolName;
+        meta.appendChild(toolTag);
+      }
+
+      const bubble = document.createElement('div');
+      bubble.className = 'agent-chat-bubble';
+      bubble.textContent = entry.text;
+      bubble.style.whiteSpace = 'pre-wrap';
+
+      wrapper.append(meta, bubble);
+      fragment.appendChild(wrapper);
+    }
+
+    this.chatEl.replaceChildren(fragment);
 
     this.chatEl.scrollTop = this.chatEl.scrollHeight;
     this.updateStats();
   }
 
-  private renderApprovalCard(entry: ChatMessage): string {
+  private renderApprovalCard(entry: ChatMessage): HTMLElement {
     const call = entry.pendingCall!;
     const argsText =
       call.arguments && Object.keys(call.arguments).length > 0
-        ? this.escapeHtml(JSON.stringify(call.arguments, null, 2))
+        ? JSON.stringify(call.arguments, null, 2)
         : 'No arguments';
-    return `
-      <div class="agent-chat-message agent-chat-message-approval">
-        <div class="agent-approval-card">
-          <div class="agent-approval-header">
-            <svg class="agent-approval-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span class="agent-approval-tool">${this.escapeHtml(call.name)}</span>
-            <span class="agent-approval-label">approval required</span>
-          </div>
-          <pre class="agent-approval-args">${argsText}</pre>
-          <div class="agent-approval-actions">
-            <button class="agent-approve-btn" data-approve-id="${entry.id}" type="button">Run</button>
-            <button class="agent-cancel-btn" data-cancel-id="${entry.id}" type="button">Cancel</button>
-          </div>
-        </div>
-      </div>
-    `;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'agent-chat-message agent-chat-message-approval';
+
+    const card = document.createElement('div');
+    card.className = 'agent-approval-card';
+
+    const header = document.createElement('div');
+    header.className = 'agent-approval-header';
+
+    const icon = document.createElement('span');
+    icon.className = 'agent-approval-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '!';
+
+    const tool = document.createElement('span');
+    tool.className = 'agent-approval-tool';
+    tool.textContent = call.name;
+
+    const label = document.createElement('span');
+    label.className = 'agent-approval-label';
+    label.textContent = 'approval required';
+
+    header.append(icon, tool, label);
+
+    const args = document.createElement('pre');
+    args.className = 'agent-approval-args';
+    args.textContent = argsText;
+
+    const actions = document.createElement('div');
+    actions.className = 'agent-approval-actions';
+
+    const approve = document.createElement('button');
+    approve.className = 'agent-approve-btn';
+    approve.dataset.approveId = entry.id;
+    approve.type = 'button';
+    approve.textContent = 'Run';
+
+    const cancel = document.createElement('button');
+    cancel.className = 'agent-cancel-btn';
+    cancel.dataset.cancelId = entry.id;
+    cancel.type = 'button';
+    cancel.textContent = 'Cancel';
+
+    actions.append(approve, cancel);
+    card.append(header, args, actions);
+    wrapper.appendChild(card);
+
+    return wrapper;
   }
 
-  private renderCancelledCard(entry: ChatMessage): string {
-    return `
-      <div class="agent-chat-message agent-chat-message-system">
-        <div class="agent-chat-bubble">Cancelled: ${this.escapeHtml(entry.toolName ?? 'tool')}</div>
-      </div>
-    `;
+  private renderCancelledCard(entry: ChatMessage): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'agent-chat-message agent-chat-message-system';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'agent-chat-bubble';
+    bubble.textContent = `Cancelled: ${entry.toolName ?? 'tool'}`;
+
+    wrapper.appendChild(bubble);
+    return wrapper;
+  }
+
+  private appendStaticMarkup(target: HTMLElement, markup: string): void {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(markup, 'text/html');
+    for (const node of Array.from(doc.body.childNodes)) {
+      target.appendChild(node);
+    }
   }
 
   private updateStats(): void {
@@ -617,15 +680,6 @@ class AgentPanel {
     }
   }
 
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-      .replace(/\n/g, '<br />');
-  }
 }
 
 export const agentPanel = new AgentPanel();

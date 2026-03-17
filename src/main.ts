@@ -1,21 +1,40 @@
 import './styles/main.css';
 import './styles/responsive.css';
-import { icons } from './utils/icons';
 import { pdfService } from './utils/pdf';
 import { toast } from './utils/toast';
 import { responsive, setupSafeAreaVariables } from './utils/responsive';
-import { signaturePad } from './components/SignaturePad';
-import { mergeModal } from './components/MergeModal';
-import { textEditor } from './components/TextEditor';
-import { agentPanel } from './components/AgentPanel';
-import { createDoubleAgentArchitecture } from './agent';
-import { appendSanitizedHtml, setSanitizedHtml } from './utils/safeHtml';
-import type { AgentToolCall } from './agent';
 import type { EditorCommandRequest, EditorCommandResult } from './agent/shared/types';
-import type { Annotation, SignatureData, ImageData as ImgData } from './types';
+import type { Annotation } from './types';
 import { guardFile } from './utils/file-guard';
 import { HistoryStack } from './utils/history';
-import { sessionVault } from './utils/session-vault';
+import {
+  addCheckboxAnnotation,
+  addDateAnnotation,
+  addImageAnnotation,
+  addSignatureAnnotation,
+  addTextAnnotation,
+  handleCanvasClick,
+} from './editor/annotation-actions';
+import { createAnnotationElement } from './editor/annotation-dom';
+import {
+  applyImageSizeModeToSelected,
+  buildCurrentPDFBytes,
+  checkSessionRecovery,
+  emailCurrentPDF,
+  openMergeModal,
+  savePDF,
+  scheduleAutosave,
+  setupKeyboardShortcuts,
+} from './editor/actions';
+import { runEditorCommand, setupAgentRuntime } from './editor/agent-runtime';
+import { setupEditorEventListeners } from './editor/event-bindings';
+import {
+  applyColorFromPropertiesBar,
+  openTextPopupEditor,
+  startInlineTextEdit,
+  updatePropertiesBar,
+} from './editor/properties';
+import { renderEditorShell } from './editor/render-shell';
 
 class PDFEditor {
   private currentPage = 1;
@@ -69,121 +88,35 @@ class PDFEditor {
   }
 
   private setupAgentRuntime(): void {
-    const architecture = createDoubleAgentArchitecture({
-      run: (request) => this.runEditorCommand(request),
+    setupAgentRuntime({
+      runEditorCommand: (request) => this.runEditorCommand(request),
     });
-
-    architecture.main.subscribeNarration((event) => {
-      toast.info(`[agent-main ${event.phase}] ${event.message}`);
-    });
-
-    architecture.dbl.subscribeNarration((event) => {
-      toast.info(`[agent-dbl ${event.phase}] ${event.message}`);
-    });
-
-    const globalWindow = window as Window & {
-      xcmPdfAgents?: {
-        listTools: (agent: 'main' | 'dbl') => ReturnType<typeof architecture.main.listTools>;
-        callTool: (agent: 'main' | 'dbl', call: AgentToolCall) => ReturnType<typeof architecture.main.callTool>;
-        getReports: (agent: 'main' | 'dbl') => ReturnType<typeof architecture.main.getReports>;
-      };
-    };
-
-    globalWindow.xcmPdfAgents = {
-      listTools: (agent) => architecture[agent].listTools(),
-      callTool: (agent, call) => architecture[agent].callTool(call),
-      getReports: (agent) => architecture[agent].getReports(),
-    };
-
-    agentPanel.init(architecture);
   }
 
   private async runEditorCommand(request: EditorCommandRequest): Promise<EditorCommandResult> {
-    switch (request.command) {
-      case 'open_file_picker':
-        this.openFilePicker();
-        return { ok: true, message: 'File picker opened' };
-      case 'open_merge_modal':
-        this.openMergeModal();
-        return { ok: true, message: 'Merge modal opened' };
-      case 'create_blank_pdf': {
-        const pagesRaw = Number(request.arguments?.pages ?? 1);
-        const pages = Number.isFinite(pagesRaw) ? Math.max(1, Math.floor(pagesRaw)) : 1;
-        const createdBytes = await pdfService.createBlankPDF(pages);
-        const buffer = Uint8Array.from(createdBytes).buffer as ArrayBuffer;
-        const fileLabel = pages === 1 ? 'blank-1-page.pdf' : `blank-${pages}-pages.pdf`;
-        await this.loadPDF(buffer, fileLabel);
-        return { ok: true, message: `Created blank PDF with ${pages} page(s)` };
-      }
-      case 'save_pdf':
-        await this.savePDF();
-        return { ok: true, message: 'Save command executed' };
-      case 'email_pdf': {
-        const to = String(request.arguments?.to ?? '').trim();
-        const subject = String(request.arguments?.subject ?? '').trim();
-        const body = String(request.arguments?.body ?? '').trim();
-        const result = await this.emailCurrentPDF({ to, subject, body });
-        return result;
-      }
-      case 'set_tool': {
-        const tool = String(request.arguments?.tool ?? '').trim();
-        if (!this.isSupportedTool(tool)) {
-          return { ok: false, message: `Unsupported tool: ${tool || 'empty'}` };
-        }
-        this.setActiveTool(tool);
-        return { ok: true, message: `Active tool set to ${tool}` };
-      }
-      case 'canvas_click': {
-        const x = Number(request.arguments?.x ?? NaN);
-        const y = Number(request.arguments?.y ?? NaN);
-        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0) {
-          return { ok: false, message: 'x and y must be non-negative numbers' };
-        }
-        const applied = this.applyActiveToolAt(x, y);
-        return {
-          ok: applied,
-          message: applied ? `Applied ${this.activeTool || 'tool'} at x=${x}, y=${y}` : 'No applicable active tool selected',
-        };
-      }
-      case 'zoom_in':
-        this.zoomIn();
-        return { ok: true, message: 'Zoom in executed' };
-      case 'zoom_out':
-        this.zoomOut();
-        return { ok: true, message: 'Zoom out executed' };
-      case 'go_to_page': {
-        const pageValue = Number(request.arguments?.page ?? 0);
-        if (!Number.isInteger(pageValue) || pageValue < 1) {
-          return { ok: false, message: 'Page must be an integer greater than 0' };
-        }
-        await this.goToPage(pageValue);
-        return { ok: true, message: `Navigated to page ${pageValue}` };
-      }
-      case 'delete_selected_annotation': {
-        const before = this.annotations.length;
-        this.deleteSelectedAnnotation();
-        const deleted = this.annotations.length < before;
-        return {
-          ok: deleted,
-          message: deleted ? 'Selected annotation deleted' : 'No selected annotation to delete',
-        };
-      }
-      case 'get_status':
-        return {
-          ok: true,
-          message: 'Editor status collected',
-          data: {
-            currentPage: this.currentPage,
-            totalPages: this.totalPages,
-            zoom: this.zoom,
-            annotations: this.annotations.length,
-            activeTool: this.activeTool,
-            pdfLoaded: this.pdfData !== null,
-          },
-        };
-      default:
-        return { ok: false, message: `Unsupported command: ${request.command}` };
-    }
+    return runEditorCommand(request, {
+      openFilePicker: () => this.openFilePicker(),
+      openMergeModal: () => this.openMergeModal(),
+      loadPDF: (data, filename) => this.loadPDF(data, filename),
+      savePDF: () => this.savePDF(),
+      emailCurrentPDF: (input) => this.emailCurrentPDF(input),
+      isSupportedTool: (tool) => this.isSupportedTool(tool),
+      setActiveTool: (tool) => this.setActiveTool(tool),
+      applyActiveToolAt: (x, y) => this.applyActiveToolAt(x, y),
+      getActiveTool: () => this.activeTool,
+      zoomIn: () => this.zoomIn(),
+      zoomOut: () => this.zoomOut(),
+      goToPage: (page) => this.goToPage(page),
+      deleteSelectedAnnotation: () => this.deleteSelectedAnnotation(),
+      getAnnotationsCount: () => this.annotations.length,
+      getStatus: () => ({
+        currentPage: this.currentPage,
+        totalPages: this.totalPages,
+        zoom: this.zoom,
+        activeTool: this.activeTool,
+        pdfLoaded: this.pdfData !== null,
+      }),
+    });
   }
 
   private isSupportedTool(tool: string): boolean {
@@ -272,258 +205,39 @@ class PDFEditor {
   }
 
   private render(): void {
-    const app = document.getElementById('app')!;
-    setSanitizedHtml(app, `
-      <header class="header">
-        <div class="header-brand">
-          <div class="header-logo">XCM-PDF</div>
-          <div class="header-subtitle">Leto's Angels Educational Project by XcaliburMoon</div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-secondary" id="btn-new">
-            ${icons.plus} New PDF
-          </button>
-          <button class="btn btn-secondary" id="btn-open">
-            ${icons.upload} Open PDF
-          </button>
-          <button class="btn btn-secondary" id="btn-merge">
-            ${icons.merge} Merge
-          </button>
-          <button class="btn btn-primary" id="btn-save" disabled>
-            ${icons.save} Save
-          </button>
-        </div>
-      </header>
-
-      <div class="main-container">
-        <aside class="sidebar" id="sidebar">
-          <div class="sidebar-header">
-            <span>Pages</span>
-            <span id="page-count">0 pages</span>
-          </div>
-          <div class="sidebar-content" id="thumbnail-container"></div>
-        </aside>
-
-        <div class="canvas-container">
-          <div class="toolbar" id="toolbar">
-            <div class="toolbar-group">
-              <button class="btn btn-toolbar" id="tool-select" data-tool="select" title="Select">
-                ${icons.select}
-              </button>
-            </div>
-
-            <div class="toolbar-group">
-              <button class="btn btn-toolbar" id="tool-text" data-tool="text" title="Add Text">
-                ${icons.text}
-              </button>
-              <button class="btn btn-toolbar" id="tool-image" data-tool="image" title="Add Image">
-                ${icons.image}
-              </button>
-              <button class="btn btn-toolbar" id="tool-signature" data-tool="signature" title="Add Signature">
-                ${icons.signature}
-              </button>
-            </div>
-
-            <div class="toolbar-group">
-              <button class="btn btn-toolbar" id="tool-highlight" data-tool="highlight" title="Highlight: click and drag to highlight an area">
-                ${icons.highlight}
-              </button>
-              <button class="btn btn-toolbar" id="tool-checkbox" data-tool="checkbox" title="Checkbox">
-                ${icons.checkbox}
-              </button>
-              <button class="btn btn-toolbar" id="tool-date" data-tool="date" title="Insert Date">
-                ${icons.calendar}
-              </button>
-            </div>
-
-            <div class="toolbar-group">
-              <button class="btn btn-toolbar" id="btn-delete" title="Delete Selected" disabled>
-                ${icons.trash}
-              </button>
-            </div>
-
-            <div class="toolbar-group">
-              <button class="btn btn-toolbar" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
-                ${icons.undo}
-              </button>
-              <button class="btn btn-toolbar" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>
-                ${icons.redo}
-              </button>
-            </div>
-
-            <div class="toolbar-group zoom-controls">
-              <button class="btn btn-toolbar btn-icon" id="btn-zoom-out" title="Zoom Out">
-                ${icons.zoomOut}
-              </button>
-              <span class="zoom-value" id="zoom-value">100%</span>
-              <button class="btn btn-toolbar btn-icon" id="btn-zoom-in" title="Zoom In">
-                ${icons.zoomIn}
-              </button>
-            </div>
-
-            <div class="toolbar-group page-nav">
-              <button class="btn btn-toolbar btn-icon" id="btn-prev-page" title="Previous Page" disabled>
-                ${icons.chevronLeft}
-              </button>
-              <input type="number" class="page-input" id="page-input" value="1" min="1">
-              <span class="page-total" id="page-total">/ 0</span>
-              <button class="btn btn-toolbar btn-icon" id="btn-next-page" title="Next Page" disabled>
-                ${icons.chevronRight}
-              </button>
-            </div>
-          </div>
-
-          <div class="properties-bar" id="properties-bar" hidden>
-            <span class="properties-bar-label" id="properties-bar-label">Color</span>
-            <div class="properties-bar-swatches" id="properties-bar-swatches"></div>
-            <span class="properties-bar-divider" id="properties-bar-divider" hidden></span>
-            <label class="properties-bar-opacity-wrap" id="properties-bar-opacity-wrap" hidden>
-              <span>Opacity</span>
-              <input type="range" id="properties-bar-opacity" min="10" max="80" value="30">
-              <span id="properties-bar-opacity-val">30%</span>
-            </label>
-            <div class="properties-bar-image-controls" id="properties-bar-image-controls" hidden>
-              <span>Image size</span>
-              <button class="btn btn-toolbar properties-chip" data-image-size-mode="auto">Auto</button>
-              <button class="btn btn-toolbar properties-chip" data-image-size-mode="regular">Regular</button>
-              <button class="btn btn-toolbar properties-chip" id="properties-bar-image-apply" hidden>Apply to selected</button>
-            </div>
-          </div>
-
-          <div class="canvas-wrapper" id="canvas-wrapper">
-            <div class="empty-state" id="empty-state">
-              <div class="empty-state-icon">
-                ${icons.pdf}
-              </div>
-              <h2 class="empty-state-title">No PDF Loaded</h2>
-              <p class="empty-state-description">
-                Open a PDF file to start editing, or merge multiple PDFs into one document.
-              </p>
-              <div class="drop-zone" id="drop-zone">
-                <div style="margin-bottom: 8px;">${icons.upload}</div>
-                <div style="font-weight: 500; margin-bottom: 4px;">Drop PDF file here</div>
-                <div style="font-size: 12px; color: var(--color-gray-500);">or click to browse</div>
-                <input type="file" id="file-input" class="hidden-input" accept=".pdf">
-              </div>
-            </div>
-
-            <div class="pdf-canvas-container" id="pdf-container" style="display: none;">
-              <canvas id="pdf-canvas" class="pdf-canvas"></canvas>
-              <div class="annotation-layer" id="annotation-layer"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <footer class="status-bar">
-        <div class="status-item">
-          <span id="status-file">No file loaded</span>
-        </div>
-        <div class="status-item">
-          <span id="status-info">XCM-PDF v1.0 - Free PDF Editor for Educational Use</span>
-        </div>
-      </footer>
-    `);
+    renderEditorShell();
   }
 
   private setupEventListeners(): void {
-    document.getElementById('btn-new')?.addEventListener('click', () => this.createNewPDF());
-    document.getElementById('btn-open')?.addEventListener('click', () => this.openFilePicker());
-    document.getElementById('btn-merge')?.addEventListener('click', () => this.openMergeModal());
-    document.getElementById('btn-save')?.addEventListener('click', () => this.savePDF());
-
-    document.getElementById('drop-zone')?.addEventListener('click', () => this.openFilePicker());
-    document.getElementById('file-input')?.addEventListener('change', (e) => this.handleFileInput(e));
-
-    const dropZone = document.getElementById('drop-zone');
-    const canvasWrapper = document.getElementById('canvas-wrapper');
-
-    [dropZone, canvasWrapper].forEach(el => {
-      el?.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone?.classList.add('dragover');
-      });
-
-      el?.addEventListener('dragleave', () => {
-        dropZone?.classList.remove('dragover');
-      });
-
-      el?.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone?.classList.remove('dragover');
-        const files = (e as DragEvent).dataTransfer?.files;
-        if (files?.[0]) {
-          this.loadPDFFile(files[0]);
-        }
-      });
+    setupEditorEventListeners({
+      createNewPDF: () => this.createNewPDF(),
+      openFilePicker: () => this.openFilePicker(),
+      openMergeModal: () => this.openMergeModal(),
+      savePDF: () => this.savePDF(),
+      handleFileInput: (event) => this.handleFileInput(event),
+      loadPDFFile: (file) => this.loadPDFFile(file),
+      setActiveTool: (tool) => this.setActiveTool(tool),
+      deleteSelectedAnnotation: () => this.deleteSelectedAnnotation(),
+      undo: () => this.undo(),
+      redo: () => this.redo(),
+      setImageSizingMode: (mode) => {
+        this.imageSizingMode = mode;
+      },
+      updatePropertiesBar: () => this.updatePropertiesBar(),
+      applyImageSizeModeToSelected: () => this.applyImageSizeModeToSelected(),
+      applyColorFromPropertiesBar: (color) => this.applyColorFromPropertiesBar(color),
+      getSelectedAnnotation: () => this.selectedAnnotation,
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+      zoomIn: () => this.zoomIn(),
+      zoomOut: () => this.zoomOut(),
+      getCurrentPage: () => this.currentPage,
+      goToPage: (page) => this.goToPage(page),
+      handleCanvasClick: (event) => this.handleCanvasClick(event),
+      handleMouseDown: (event) => this.handleMouseDown(event),
+      handleMouseMove: (event) => this.handleMouseMove(event),
+      handleMouseUp: (event) => this.handleMouseUp(event),
     });
-
-    document.querySelectorAll('[data-tool]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tool = btn.getAttribute('data-tool');
-        this.setActiveTool(tool);
-      });
-    });
-
-    document.getElementById('btn-delete')?.addEventListener('click', () => this.deleteSelectedAnnotation());
-    document.getElementById('btn-undo')?.addEventListener('click', () => this.undo());
-    document.getElementById('btn-redo')?.addEventListener('click', () => this.redo());
-
-    document.getElementById('properties-bar')?.addEventListener('click', (e) => {
-      const modeButton = (e.target as HTMLElement).closest('[data-image-size-mode]') as HTMLElement | null;
-      if (modeButton) {
-        this.imageSizingMode = (modeButton.dataset.imageSizeMode as 'auto' | 'regular') ?? 'auto';
-        this.updatePropertiesBar();
-        return;
-      }
-
-      const applyImageButton = (e.target as HTMLElement).closest('#properties-bar-image-apply');
-      if (applyImageButton) {
-        this.applyImageSizeModeToSelected();
-        return;
-      }
-
-      const swatch = (e.target as HTMLElement).closest('[data-prop-color]') as HTMLElement | null;
-      if (swatch) {
-        this.applyColorFromPropertiesBar(swatch.dataset.propColor!);
-      }
-    });
-
-    document.getElementById('properties-bar-opacity')?.addEventListener('input', (e) => {
-      const val = Number((e.target as HTMLInputElement).value);
-      const valEl = document.getElementById('properties-bar-opacity-val');
-      if (valEl) valEl.textContent = `${val}%`;
-      if (this.selectedAnnotation?.type === 'highlight') {
-        this.selectedAnnotation.style = { ...this.selectedAnnotation.style, opacity: val / 100 };
-        this.renderAnnotations();
-        this.scheduleAutosave();
-      }
-    });
-
-    document.getElementById('properties-bar')?.addEventListener('change', (e) => {
-      const input = e.target as HTMLInputElement;
-      if (input.id === 'properties-bar-custom-color') {
-        this.applyColorFromPropertiesBar(input.value);
-      }
-    });
-
-    document.getElementById('btn-zoom-in')?.addEventListener('click', () => this.zoomIn());
-    document.getElementById('btn-zoom-out')?.addEventListener('click', () => this.zoomOut());
-
-    document.getElementById('btn-prev-page')?.addEventListener('click', () => this.goToPage(this.currentPage - 1));
-    document.getElementById('btn-next-page')?.addEventListener('click', () => this.goToPage(this.currentPage + 1));
-    document.getElementById('page-input')?.addEventListener('change', (e) => {
-      const page = parseInt((e.target as HTMLInputElement).value);
-      this.goToPage(page);
-    });
-
-    const annotationLayer = document.getElementById('annotation-layer');
-    annotationLayer?.addEventListener('click', (e) => this.handleCanvasClick(e));
-    annotationLayer?.addEventListener('pointerdown', (e) => this.handleMouseDown(e));
-    annotationLayer?.addEventListener('pointermove', (e) => this.handleMouseMove(e));
-    annotationLayer?.addEventListener('pointerup', (e) => this.handleMouseUp(e));
-    annotationLayer?.addEventListener('pointercancel', (e) => this.handleMouseUp(e));
-    annotationLayer?.addEventListener('pointerleave', (e) => this.handleMouseUp(e));
   }
 
   private openFilePicker(): void {
@@ -708,199 +422,89 @@ class PDFEditor {
   }
 
   private handleCanvasClick(e: MouseEvent): void {
-    // Highlight is handled entirely by mousedown/mouseup — skip here
-    if (this.activeTool === 'highlight') return;
-
-    if (!this.activeTool || this.activeTool === 'select') {
-      this.selectAnnotationAt(e);
-      return;
-    }
-
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const x = (e.clientX - rect.left) / this.zoom;
-    const y = (e.clientY - rect.top) / this.zoom;
-
-    switch (this.activeTool) {
-      case 'text':
-        this.addTextAnnotation(x, y);
-        break;
-      case 'image':
-        this.addImageAnnotation(x, y);
-        break;
-      case 'signature':
-        this.addSignatureAnnotation(x, y);
-        break;
-      case 'checkbox':
-        this.addCheckboxAnnotation(x, y);
-        break;
-      case 'date':
-        this.addDateAnnotation(x, y);
-        break;
-    }
+    handleCanvasClick({
+      event: e,
+      activeTool: this.activeTool,
+      zoom: this.zoom,
+      selectAnnotationAt: (event) => this.selectAnnotationAt(event),
+      addTextAnnotation: (x, y) => this.addTextAnnotation(x, y),
+      addImageAnnotation: (x, y) => this.addImageAnnotation(x, y),
+      addSignatureAnnotation: (x, y) => this.addSignatureAnnotation(x, y),
+      addCheckboxAnnotation: (x, y) => this.addCheckboxAnnotation(x, y),
+      addDateAnnotation: (x, y) => this.addDateAnnotation(x, y),
+    });
   }
 
   private addTextAnnotation(x: number, y: number): void {
-    textEditor.open((options) => {
-      // Sync the active text color when the user picks one in the popup
-      this.activeTextColor = options.color;
-      const annotation: Annotation = {
-        id: crypto.randomUUID(),
-        type: 'text',
-        pageIndex: this.currentPage - 1,
-        x: x / this.canvasScale,
-        y: y / this.canvasScale,
-        width: 200,
-        height: options.fontSize + 4,
-        content: options.text,
-        style: {
-          fontSize: options.fontSize,
-          fontFamily: options.fontFamily,
-          color: options.color,
-        },
-      };
-
-      this.snapshotAnnotations();
-      this.annotations.push(annotation);
-      this.renderAnnotations();
-      this.scheduleAutosave();
-      this.updatePropertiesBar();
-      toast.success('Text added');
-    }, this.activeTextColor, '');
+    addTextAnnotation({
+      x,
+      y,
+      currentPage: this.currentPage,
+      canvasScale: this.canvasScale,
+      activeTextColor: this.activeTextColor,
+      setActiveTextColor: (color) => {
+        this.activeTextColor = color;
+      },
+      annotations: this.annotations,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+      updatePropertiesBar: () => this.updatePropertiesBar(),
+    });
   }
 
   private addImageAnnotation(x: number, y: number): void {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const imageSize = this.getImageSizeForMode(img.width, img.height, this.imageSizingMode);
-
-          const imgData: ImgData = {
-            src: e.target?.result as string,
-            originalWidth: img.width,
-            originalHeight: img.height,
-          };
-
-          const annotation: Annotation = {
-            id: crypto.randomUUID(),
-            type: 'image',
-            pageIndex: this.currentPage - 1,
-            x: x / this.canvasScale,
-            y: y / this.canvasScale,
-            width: imageSize.width,
-            height: imageSize.height,
-            content: imgData,
-          };
-
-          this.snapshotAnnotations();
-          this.annotations.push(annotation);
-          this.renderAnnotations();
-          this.scheduleAutosave();
-          toast.success('Image added');
-        };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+    addImageAnnotation({
+      x,
+      y,
+      currentPage: this.currentPage,
+      canvasScale: this.canvasScale,
+      imageSizingMode: this.imageSizingMode,
+      annotations: this.annotations,
+      getImageSizeForMode: (originalWidth, originalHeight, mode) => this.getImageSizeForMode(originalWidth, originalHeight, mode),
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
     });
-
-    input.click();
   }
 
   private addSignatureAnnotation(x: number, y: number): void {
-    signaturePad.open((signature: SignatureData) => {
-      const img = new Image();
-      img.onload = () => {
-        const maxWidth = 200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          const ratio = maxWidth / width;
-          width *= ratio;
-          height *= ratio;
-        }
-
-        const annotation: Annotation = {
-          id: crypto.randomUUID(),
-          type: 'signature',
-          pageIndex: this.currentPage - 1,
-          x: x / this.canvasScale,
-          y: y / this.canvasScale,
-          width: width,
-          height: height,
-          content: signature,
-        };
-
-        this.snapshotAnnotations();
-        this.annotations.push(annotation);
-        this.renderAnnotations();
-        this.scheduleAutosave();
-
-        if (signature.cryptoSignature) {
-          toast.success('Cryptographic signature added');
-        } else {
-          toast.success('Signature added');
-        }
-      };
-      img.src = signature.imageData;
+    addSignatureAnnotation({
+      x,
+      y,
+      currentPage: this.currentPage,
+      canvasScale: this.canvasScale,
+      annotations: this.annotations,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
     });
   }
 
   private addCheckboxAnnotation(x: number, y: number): void {
-    const annotation: Annotation = {
-      id: crypto.randomUUID(),
-      type: 'checkbox',
-      pageIndex: this.currentPage - 1,
-      x: x / this.canvasScale,
-      y: y / this.canvasScale,
-      width: 20,
-      height: 20,
-      content: 'unchecked',
-    };
-
-    this.snapshotAnnotations();
-    this.annotations.push(annotation);
-    this.renderAnnotations();
-    this.scheduleAutosave();
-    toast.success('Checkbox added');
+    addCheckboxAnnotation({
+      x,
+      y,
+      currentPage: this.currentPage,
+      canvasScale: this.canvasScale,
+      annotations: this.annotations,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+    });
   }
 
   private addDateAnnotation(x: number, y: number): void {
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    addDateAnnotation({
+      x,
+      y,
+      currentPage: this.currentPage,
+      canvasScale: this.canvasScale,
+      annotations: this.annotations,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
     });
-
-    const annotation: Annotation = {
-      id: crypto.randomUUID(),
-      type: 'date',
-      pageIndex: this.currentPage - 1,
-      x: x / this.canvasScale,
-      y: y / this.canvasScale,
-      width: 150,
-      height: 20,
-      content: dateStr,
-      style: {
-        fontSize: 12,
-        color: '#000000',
-      },
-    };
-
-    this.snapshotAnnotations();
-    this.annotations.push(annotation);
-    this.renderAnnotations();
-    this.scheduleAutosave();
-    toast.success('Date added');
   }
 
   private renderAnnotations(): void {
@@ -916,112 +520,19 @@ class PDFEditor {
   }
 
   private createAnnotationElement(annotation: Annotation): HTMLElement {
-    const el = document.createElement('div');
-    el.className = `annotation annotation-${annotation.type}`;
-    el.dataset.id = annotation.id;
-    el.style.position = 'absolute';
-    el.style.left = `${annotation.x * this.canvasScale * this.zoom}px`;
-    el.style.top = `${annotation.y * this.canvasScale * this.zoom}px`;
-    el.style.width = `${annotation.width * this.zoom}px`;
-    el.style.height = `${annotation.height * this.zoom}px`;
-
-    if (this.selectedAnnotation?.id === annotation.id) {
-      el.style.outline = '2px solid var(--color-purple)';
-      el.style.outlineOffset = '2px';
-    }
-
-    switch (annotation.type) {
-      case 'text': {
-        el.style.fontSize = `${(annotation.style?.fontSize || 14) * this.zoom}px`;
-        el.style.color = annotation.style?.color || '#000';
-        el.style.fontFamily = annotation.style?.fontFamily || 'Helvetica, Arial, sans-serif';
-        el.style.whiteSpace = 'pre-wrap';
-        el.style.width = 'auto';
-        el.style.height = 'auto';
-        if (this.activeTool === 'select') {
-          el.style.cursor = 'text';
-        }
-        el.textContent = annotation.content as string;
-        break;
-      }
-
-      case 'image':
-      case 'signature': {
-        const img = document.createElement('img');
-
-        if (annotation.type === 'signature') {
-          const sigData = annotation.content as SignatureData;
-          img.src = sigData.imageData;
-
-          if (sigData.cryptoSignature) {
-            el.style.borderBottom = '2px solid #10b981';
-            el.title = 'Cryptographically signed';
-          }
-        } else {
-          const imgData = annotation.content as ImgData;
-          img.src = imgData.src;
-        }
-
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-        img.draggable = false;
-        el.appendChild(img);
-
-        if (annotation.type === 'image' && this.activeTool === 'select' && this.selectedAnnotation?.id === annotation.id) {
-          const handles: Array<'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'> = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
-          for (const handle of handles) {
-            const handleEl = document.createElement('button');
-            handleEl.type = 'button';
-            handleEl.className = `resize-handle resize-handle-${handle}`;
-            handleEl.dataset.resizeHandle = handle;
-            handleEl.title = 'Resize image';
-            el.appendChild(handleEl);
-          }
-        }
-        break;
-      }
-
-      case 'checkbox': {
-        el.style.border = '1px solid #000';
-        el.style.backgroundColor = '#fff';
-        el.style.cursor = 'pointer';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-
-        if (annotation.content === 'checked') {
-          appendSanitizedHtml(el, icons.check);
-          el.style.color = '#000';
-        }
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.snapshotAnnotations();
-          annotation.content = annotation.content === 'checked' ? 'unchecked' : 'checked';
-          this.renderAnnotations();
-          this.scheduleAutosave();
-        });
-        break;
-      }
-
-      case 'date': {
-        el.style.fontSize = `${(annotation.style?.fontSize || 12) * this.zoom}px`;
-        el.style.color = annotation.style?.color || '#000';
-        el.style.fontFamily = 'Helvetica, Arial, sans-serif';
-        el.style.width = 'auto';
-        el.textContent = annotation.content as string;
-        break;
-      }
-
-      case 'highlight': {
-        el.style.backgroundColor = annotation.style?.color || '#ffff00';
-        el.style.opacity = String(annotation.style?.opacity ?? 0.3);
-        break;
-      }
-    }
-
-    return el;
+    return createAnnotationElement({
+      annotation,
+      canvasScale: this.canvasScale,
+      zoom: this.zoom,
+      selectedAnnotationId: this.selectedAnnotation?.id ?? null,
+      activeTool: this.activeTool,
+      onToggleCheckbox: (targetAnnotation) => {
+        this.snapshotAnnotations();
+        targetAnnotation.content = targetAnnotation.content === 'checked' ? 'unchecked' : 'checked';
+        this.renderAnnotations();
+        this.scheduleAutosave();
+      },
+    });
   }
 
   private selectAnnotationAt(e: MouseEvent): void {
@@ -1337,367 +848,128 @@ class PDFEditor {
   }
 
   private updatePropertiesBar(): void {
-    const bar = document.getElementById('properties-bar');
-    const label = document.getElementById('properties-bar-label');
-    const swatchContainer = document.getElementById('properties-bar-swatches');
-    const divider = document.getElementById('properties-bar-divider');
-    const opacityWrap = document.getElementById('properties-bar-opacity-wrap') as HTMLElement | null;
-    const imageControls = document.getElementById('properties-bar-image-controls') as HTMLElement | null;
-    if (!bar || !label || !swatchContainer) return;
-
-    const sel = this.selectedAnnotation;
-    const isHighlightContext =
-      this.activeTool === 'highlight' ||
-      (sel?.type === 'highlight');
-    const isTextContext =
-      this.activeTool === 'text' ||
-      (sel?.type === 'text' || sel?.type === 'date');
-    const isImageContext =
-      this.activeTool === 'image' ||
-      (sel?.type === 'image');
-
-    const visible = isHighlightContext || isTextContext || isImageContext;
-    bar.hidden = !visible;
-    if (!visible) return;
-
-    if (isImageContext) {
-      label.textContent = 'Image sizing';
-      swatchContainer.hidden = true;
-      swatchContainer.innerHTML = '';
-      if (divider) divider.hidden = true;
-      if (opacityWrap) opacityWrap.hidden = true;
-      if (imageControls) {
-        imageControls.hidden = false;
-        imageControls.querySelectorAll<HTMLElement>('[data-image-size-mode]').forEach((btn) => {
-          btn.classList.toggle('active', btn.dataset.imageSizeMode === this.imageSizingMode);
-        });
-        const applyButton = imageControls.querySelector('#properties-bar-image-apply') as HTMLButtonElement | null;
-        if (applyButton) {
-          applyButton.hidden = sel?.type !== 'image';
-        }
-      }
-      return;
-    }
-
-    swatchContainer.hidden = false;
-    if (imageControls) imageControls.hidden = true;
-    if (divider) divider.hidden = !isHighlightContext;
-
-    const highlightSwatches = [
-      { color: '#ffff00', label: 'Yellow' },
-      { color: '#90ee90', label: 'Green' },
-      { color: '#add8e6', label: 'Blue' },
-      { color: '#ffb6c1', label: 'Pink' },
-      { color: '#ffa500', label: 'Orange' },
-      { color: '#dda0dd', label: 'Plum' },
-      { color: '#ff6b6b', label: 'Coral' },
-      { color: '#b0e0e6', label: 'Powder Blue' },
-    ];
-    const textSwatches = [
-      { color: '#000000', label: 'Black' },
-      { color: '#1f2937', label: 'Dark' },
-      { color: '#4b5563', label: 'Gray' },
-      { color: '#7c3aed', label: 'Purple' },
-      { color: '#2563eb', label: 'Blue' },
-      { color: '#059669', label: 'Green' },
-      { color: '#dc2626', label: 'Red' },
-      { color: '#d97706', label: 'Amber' },
-    ];
-
-    const swatches = isHighlightContext ? highlightSwatches : textSwatches;
-    const activeColor = isHighlightContext
-      ? (sel?.type === 'highlight' ? (sel.style?.color ?? this.activeHighlightColor) : this.activeHighlightColor)
-      : (sel ? (sel.style?.color ?? this.activeTextColor) : this.activeTextColor);
-
-    label.textContent = isHighlightContext ? 'Highlight color' : sel ? 'Text color' : 'Text color';
-
-    swatchContainer.innerHTML = swatches
-      .map(
-        (s) =>
-          `<button class="properties-bar-swatch${s.color === activeColor ? ' active' : ''}" data-prop-color="${s.color}" title="${s.label}" style="background:${s.color};"></button>`,
-      )
-      .join('') +
-      `<input type="color" id="properties-bar-custom-color" class="properties-bar-custom-color" value="${activeColor}" title="Custom color">`;
-
-    if (opacityWrap) {
-      const showOpacity = isHighlightContext;
-      opacityWrap.hidden = !showOpacity;
-      if (showOpacity && sel?.type === 'highlight') {
-        const opInput = document.getElementById('properties-bar-opacity') as HTMLInputElement | null;
-        const opVal = document.getElementById('properties-bar-opacity-val');
-        const pct = Math.round((sel.style?.opacity ?? 0.3) * 100);
-        if (opInput) opInput.value = String(pct);
-        if (opVal) opVal.textContent = `${pct}%`;
-      }
-    }
+    updatePropertiesBar({
+      selectedAnnotation: this.selectedAnnotation,
+      activeTool: this.activeTool,
+      activeHighlightColor: this.activeHighlightColor,
+      activeTextColor: this.activeTextColor,
+      imageSizingMode: this.imageSizingMode,
+    });
   }
 
   private applyColorFromPropertiesBar(color: string): void {
-    const sel = this.selectedAnnotation;
-    if (sel?.type === 'highlight' || sel?.type === 'text' || sel?.type === 'date') {
-      this.snapshotAnnotations();
-      sel.style = { ...sel.style, color };
-      this.renderAnnotations();
-      this.scheduleAutosave();
-    }
-    if (this.activeTool === 'highlight' || sel?.type === 'highlight') {
-      this.activeHighlightColor = color;
-    }
-    if (this.activeTool === 'text' || sel?.type === 'text' || sel?.type === 'date') {
-      this.activeTextColor = color;
-    }
+    const nextColors = applyColorFromPropertiesBar({
+      color,
+      selectedAnnotation: this.selectedAnnotation,
+      activeTool: this.activeTool,
+      activeHighlightColor: this.activeHighlightColor,
+      activeTextColor: this.activeTextColor,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+      updatePropertiesBar: () => this.updatePropertiesBar(),
+    });
+    this.activeHighlightColor = nextColors.activeHighlightColor;
+    this.activeTextColor = nextColors.activeTextColor;
     this.updatePropertiesBar();
   }
 
   private startInlineTextEdit(annotationId: string): void {
-    if (this.editingTextAnnotationId === annotationId) {
-      return;
-    }
-
-    const annotation = this.annotations.find((a) => a.id === annotationId && a.type === 'text');
-    if (!annotation) return;
-
-    const element = document.querySelector(`.annotation[data-id="${annotationId}"]`) as HTMLElement | null;
-    if (!element) return;
-
-    this.snapshotAnnotations();
-    this.editingTextAnnotationId = annotationId;
-
-    const initialValue = String(annotation.content || '');
-    element.contentEditable = 'true';
-    element.classList.add('annotation-text-editing');
-    element.focus();
-
-    const selection = window.getSelection();
-    if (selection) {
-      const range = document.createRange();
-      range.selectNodeContents(element);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-
-    const finish = (save: boolean): void => {
-      const nextValue = element.textContent?.trim() ?? '';
-      element.contentEditable = 'false';
-      element.classList.remove('annotation-text-editing');
-      element.removeEventListener('blur', onBlur);
-      element.removeEventListener('keydown', onKeyDown);
-      this.editingTextAnnotationId = null;
-
-      if (!save) {
-        annotation.content = initialValue;
-      } else {
-        annotation.content = nextValue || initialValue;
-      }
-      this.renderAnnotations();
-      this.scheduleAutosave();
-      this.updatePropertiesBar();
-    };
-
-    const onBlur = (): void => finish(true);
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        finish(false);
-      } else if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        (event.currentTarget as HTMLElement).blur();
-      }
-    };
-
-    element.addEventListener('blur', onBlur);
-    element.addEventListener('keydown', onKeyDown);
+    startInlineTextEdit({
+      annotationId,
+      annotations: this.annotations,
+      editingTextAnnotationId: this.editingTextAnnotationId,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      setEditingTextAnnotationId: (nextId) => {
+        this.editingTextAnnotationId = nextId;
+      },
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+      updatePropertiesBar: () => this.updatePropertiesBar(),
+    });
   }
 
   private openTextPopupEditor(annotationId: string): void {
-    const annotation = this.annotations.find((a) => a.id === annotationId && a.type === 'text');
-    if (!annotation) return;
-
-    const currentText = String(annotation.content || '');
-    const currentColor = annotation.style?.color || this.activeTextColor;
-    textEditor.open((options) => {
-      this.snapshotAnnotations();
-      this.activeTextColor = options.color;
-      annotation.content = options.text;
-      annotation.style = {
-        ...annotation.style,
-        fontSize: options.fontSize,
-        fontFamily: options.fontFamily,
-        color: options.color,
-      };
-      annotation.height = options.fontSize + 4;
-      this.renderAnnotations();
-      this.scheduleAutosave();
-      this.updatePropertiesBar();
-      toast.success('Text updated');
-    }, currentColor, currentText);
+    openTextPopupEditor({
+      annotationId,
+      annotations: this.annotations,
+      activeTextColor: this.activeTextColor,
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      setActiveTextColor: (color) => {
+        this.activeTextColor = color;
+      },
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+      updatePropertiesBar: () => this.updatePropertiesBar(),
+    });
   }
 
   private applyImageSizeModeToSelected(): void {
-    if (!this.selectedAnnotation || this.selectedAnnotation.type !== 'image') return;
-    const imageData = this.selectedAnnotation.content as ImgData;
-    const nextSize = this.getImageSizeForMode(imageData.originalWidth, imageData.originalHeight, this.imageSizingMode);
-
-    this.snapshotAnnotations();
-    this.selectedAnnotation.width = nextSize.width;
-    this.selectedAnnotation.height = nextSize.height;
-    this.renderAnnotations();
-    this.scheduleAutosave();
-    this.updatePropertiesBar();
-    toast.success(this.imageSizingMode === 'auto' ? 'Auto size applied' : 'Regular size applied');
+    applyImageSizeModeToSelected({
+      selectedAnnotation: this.selectedAnnotation,
+      imageSizingMode: this.imageSizingMode,
+      getImageSizeForMode: (originalWidth, originalHeight, mode) => this.getImageSizeForMode(originalWidth, originalHeight, mode),
+      snapshotAnnotations: () => this.snapshotAnnotations(),
+      renderAnnotations: () => this.renderAnnotations(),
+      scheduleAutosave: () => this.scheduleAutosave(),
+      updatePropertiesBar: () => this.updatePropertiesBar(),
+    });
   }
 
   private scheduleAutosave(): void {
-    if (this.autosaveTimer !== null) {
-      window.clearTimeout(this.autosaveTimer);
-    }
-    this.autosaveTimer = window.setTimeout(() => {
-      this.autosaveTimer = null;
-      if (this.pdfData) {
-        void sessionVault.save(this.currentFilename, this.pdfData, this.annotations);
-      }
-    }, 2000);
+    scheduleAutosave({
+      autosaveTimer: this.autosaveTimer,
+      setAutosaveTimer: (timer) => {
+        this.autosaveTimer = timer;
+      },
+      pdfData: this.pdfData,
+      currentFilename: this.currentFilename,
+      annotations: this.annotations,
+    });
   }
 
   private setupKeyboardShortcuts(): void {
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
-        e.preventDefault();
-        this.undo();
-      } else if ((e.ctrlKey && e.shiftKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) {
-        e.preventDefault();
-        this.redo();
-      }
-    });
+    setupKeyboardShortcuts(() => this.undo(), () => this.redo());
   }
 
   private async checkSessionRecovery(): Promise<void> {
-    const session = await sessionVault.recover();
-    if (!session) return;
-
-    const bar = document.createElement('div');
-    bar.className = 'recovery-bar';
-    bar.innerHTML = [
-      '<span class="recovery-bar-msg">',
-      `Unsaved session found: <strong>${session.filename}</strong>`,
-      ` &nbsp;(${new Date(session.timestamp).toLocaleTimeString()})`,
-      '</span>',
-      '<button class="recovery-bar-btn recovery-bar-btn--restore">Restore</button>',
-      '<button class="recovery-bar-btn recovery-bar-btn--dismiss">Dismiss</button>',
-    ].join('');
-
-    document.body.prepend(bar);
-
-    bar.querySelector('.recovery-bar-btn--restore')?.addEventListener('click', async () => {
-      bar.remove();
-      await this.loadPDF(session.pdfBytes, session.filename);
-      this.annotations = session.annotations;
-      this.renderAnnotations();
-      toast.success('Session restored');
-    });
-
-    bar.querySelector('.recovery-bar-btn--dismiss')?.addEventListener('click', () => {
-      bar.remove();
-      void sessionVault.clear();
+    await checkSessionRecovery({
+      onRestore: async (session) => {
+        await this.loadPDF(session.pdfBytes, session.filename);
+        this.annotations = session.annotations;
+        this.renderAnnotations();
+        toast.success('Session restored');
+      },
     });
   }
 
   private openMergeModal(): void {
-    mergeModal.open(async (data: ArrayBuffer) => {
+    openMergeModal(async (data) => {
       await this.loadPDF(data, 'merged.pdf');
     });
   }
 
   private async buildCurrentPDFBytes(): Promise<Uint8Array> {
-    const scaleRatio = 1 / this.canvasScale;
-    const scaledAnnotations = this.annotations.map(a => ({
-      ...a,
-      x: a.x * scaleRatio * this.canvasScale,
-      y: a.y * scaleRatio * this.canvasScale,
-      width: a.width * scaleRatio,
-      height: a.height * scaleRatio,
-    }));
-    return pdfService.applyAnnotationsAndSave(scaledAnnotations);
+    return buildCurrentPDFBytes({
+      annotations: this.annotations,
+      canvasScale: this.canvasScale,
+    });
   }
 
   private async emailCurrentPDF(input: { to: string; subject?: string; body?: string }): Promise<EditorCommandResult> {
-    if (!this.pdfData) {
-      return { ok: false, message: 'No PDF loaded' };
-    }
-    if (!input.to) {
-      return { ok: false, message: 'Recipient email is required (to).' };
-    }
-
-    const bridge = window.xcmPdfDesktop;
-    if (!bridge?.emailPDF) {
-      return {
-        ok: false,
-        message: 'Desktop email bridge is unavailable. Run in Electron with preload enabled.',
-      };
-    }
-
-    try {
-      toast.info('Preparing PDF for email...');
-      const pdfBytes = await this.buildCurrentPDFBytes();
-      let binary = '';
-      const chunkSize = 0x8000;
-      for (let i = 0; i < pdfBytes.length; i += chunkSize) {
-        const chunk = pdfBytes.subarray(i, i + chunkSize);
-        binary += String.fromCharCode(...chunk);
-      }
-      const base64 = btoa(binary);
-
-      const response = await bridge.emailPDF({
-        to: input.to,
-        subject: input.subject || `XCM-PDF: ${this.currentFilename || 'document'}`,
-        body: input.body || 'Attached is your PDF from XCM-PDF.',
-        filename: this.currentFilename || 'xcm-pdf-edited.pdf',
-        pdfBytesBase64: base64,
-      });
-
-      if (!response?.ok) {
-        const msg = response?.message || 'Email send failed';
-        toast.error(msg);
-        return { ok: false, message: msg };
-      }
-
-      toast.success('Email request completed');
-      return { ok: true, message: response.message || 'Email sent' };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown email error';
-      toast.error(message);
-      return { ok: false, message };
-    }
+    return emailCurrentPDF({
+      pdfData: this.pdfData,
+      currentFilename: this.currentFilename,
+      buildCurrentPDFBytes: () => this.buildCurrentPDFBytes(),
+      input,
+    });
   }
 
   private async savePDF(): Promise<void> {
-    if (!this.pdfData) {
-      toast.error('No PDF loaded');
-      return;
-    }
-
-    try {
-      toast.info('Saving PDF...');
-
-      const pdfBytes = await this.buildCurrentPDFBytes();
-
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'xcm-pdf-edited.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast.success('PDF saved successfully');
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save PDF');
-    }
+    await savePDF({
+      pdfData: this.pdfData,
+      buildCurrentPDFBytes: () => this.buildCurrentPDFBytes(),
+    });
   }
 }
 

@@ -1,11 +1,23 @@
 {
-  "generatedAt": "2026-03-17T05:29:49.263Z",
+  "generatedAt": "2026-03-17T06:18:41.872Z",
   "rootDir": "C:\\Users\\criss\\Desktop\\pdf-editor\\pdf-editor",
   "profile": "strict",
   "config": {
     "maxFileLines": 1000,
     "complexityThreshold": 18,
     "maxPythonLineLength": 100,
+    "excludePrefixes": [
+      "email_smoke/",
+      "pdf_tests/generated/",
+      "pdf_tests/generated_quick/",
+      "mobile/ios/Flutter/ephemeral/",
+      "mobile/.dart_tool/",
+      "mobile/build/",
+      "mobile/android/.gradle/",
+      "mobile/android/app/build/",
+      "mobile/ios/Pods/",
+      "mcp/bin/"
+    ],
     "failPolicy": {
       "maxHigh": 0,
       "maxMedium": 5,
@@ -16,15 +28,25 @@
         {
           "file": "generate-example-pdf.js",
           "messageIncludes": "Debug logging detected."
+        },
+        {
+          "file": "mcp/scripts/live-smoke-openai.mjs",
+          "messageIncludes": "Debug logging detected."
+        }
+      ],
+      "performance-memory": [
+        {
+          "file": "mcp/scripts/live-smoke-openai.mjs",
+          "messageIncludes": "Infinite loop pattern detected."
         }
       ]
     }
   },
   "summary": {
-    "total": 89,
-    "low": 56,
-    "medium": 19,
-    "high": 14
+    "total": 201,
+    "low": 174,
+    "medium": 27,
+    "high": 0
   },
   "smoke": [
     {
@@ -35,172 +57,132 @@
   ],
   "findings": [
     {
-      "check": "performance-memory",
-      "severity": "high",
-      "file": "mcp/scripts/live-smoke-openai.mjs",
-      "line": 74,
-      "message": "Infinite loop pattern detected.",
-      "recommendation": "Ensure loop has explicit and tested exit conditions."
-    },
-    {
-      "check": "security",
-      "severity": "high",
-      "file": "src/components/AgentPanel.ts",
-      "line": 50,
-      "message": "Direct innerHTML assignment detected.",
-      "recommendation": "Use textContent or sanitized HTML rendering."
-    },
-    {
-      "check": "security",
-      "severity": "high",
-      "file": "src/components/AgentPanel.ts",
-      "line": 107,
-      "message": "Direct innerHTML assignment detected.",
-      "recommendation": "Use textContent or sanitized HTML rendering."
-    },
-    {
-      "check": "security",
-      "severity": "high",
-      "file": "src/components/AgentPanel.ts",
-      "line": 432,
-      "message": "Direct innerHTML assignment detected.",
-      "recommendation": "Use textContent or sanitized HTML rendering."
-    },
-    {
-      "check": "file-lines",
-      "severity": "high",
-      "file": "src/main.ts",
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/cmd/server/main.go",
       "line": 1,
-      "message": "File has 1705 lines, exceeds limit 1000",
-      "recommendation": "Split this file into smaller modules by concern."
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
-      "check": "security",
-      "severity": "high",
-      "file": "src/main.ts",
-      "line": 1366,
-      "message": "Direct innerHTML assignment detected.",
-      "recommendation": "Use textContent or sanitized HTML rendering."
-    },
-    {
-      "check": "security",
-      "severity": "high",
-      "file": "src/main.ts",
-      "line": 1414,
-      "message": "Direct innerHTML assignment detected.",
-      "recommendation": "Use textContent or sanitized HTML rendering."
-    },
-    {
-      "check": "security",
-      "severity": "high",
-      "file": "src/main.ts",
-      "line": 1581,
-      "message": "Direct innerHTML assignment detected.",
-      "recommendation": "Use textContent or sanitized HTML rendering."
-    },
-    {
-      "check": "file-lines",
-      "severity": "high",
-      "file": "src/styles/main.css",
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
       "line": 1,
-      "message": "File has 1814 lines, exceeds limit 1000",
-      "recommendation": "Split this file into smaller modules by concern."
+      "message": "internal\\providers\\anthropic.go:46:23: Error return value of `resp.Body.Close` is not checked (errcheck)",
+      "recommendation": "Resolve the golangci-lint finding."
     },
     {
-      "check": "security",
-      "severity": "high",
-      "file": "src/utils/file-guard.ts",
-      "line": 47,
-      "message": "Possible hardcoded secret detected.",
-      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "defer resp.Body.Close()",
+      "recommendation": "Resolve the golangci-lint finding."
     },
     {
-      "check": "security",
-      "severity": "high",
-      "file": "src/utils/file-guard.ts",
-      "line": 48,
-      "message": "Possible hardcoded secret detected.",
-      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "^",
+      "recommendation": "Resolve the golangci-lint finding."
     },
     {
-      "check": "security",
-      "severity": "high",
-      "file": "src/utils/file-guard.ts",
-      "line": 49,
-      "message": "Possible hardcoded secret detected.",
-      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "internal\\providers\\anthropic.go:108:23: Error return value of `resp.Body.Close` is not checked (errcheck)",
+      "recommendation": "Resolve the golangci-lint finding."
     },
     {
-      "check": "security",
-      "severity": "high",
-      "file": "src/utils/file-guard.ts",
-      "line": 50,
-      "message": "Possible hardcoded secret detected.",
-      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "defer resp.Body.Close()",
+      "recommendation": "Resolve the golangci-lint finding."
     },
     {
-      "check": "security",
-      "severity": "high",
-      "file": "src/utils/file-guard.ts",
-      "line": 51,
-      "message": "Possible hardcoded secret detected.",
-      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "^",
+      "recommendation": "Resolve the golangci-lint finding."
     },
     {
-      "check": "go-funcs",
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "internal\\providers\\deepseek.go:45:23: Error return value of `resp.Body.Close` is not checked (errcheck)",
+      "recommendation": "Resolve the golangci-lint finding."
+    },
+    {
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "defer resp.Body.Close()",
+      "recommendation": "Resolve the golangci-lint finding."
+    },
+    {
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "^",
+      "recommendation": "Resolve the golangci-lint finding."
+    },
+    {
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "internal\\providers\\factory.go:50:6: func `withTimeout` is unused (unused)",
+      "recommendation": "Resolve the golangci-lint finding."
+    },
+    {
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "func withTimeout(base *http.Client, timeout time.Duration) *http.Client {",
+      "recommendation": "Resolve the golangci-lint finding."
+    },
+    {
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/go.mod",
+      "line": 1,
+      "message": "^",
+      "recommendation": "Resolve the golangci-lint finding."
+    },
+    {
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/internal/config/config_test.go",
-      "line": 9,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/config/config.go",
-      "line": 55,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/internal/mcp/protocol_test.go",
-      "line": 9,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
-      "check": "go-funcs",
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/internal/mcp/protocol.go",
-      "line": 32,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/mcp/protocol.go",
-      "line": 71,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/mcp/protocol.go",
-      "line": 80,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/mcp/server.go",
-      "line": 32,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
       "check": "complexity",
@@ -227,76 +209,388 @@
       "recommendation": "Split into smaller functions and simplify branches."
     },
     {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/mcp/server.go",
-      "line": 401,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/internal/providers/anthropic.go",
-      "line": 21,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/providers/deepseek.go",
-      "line": 21,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
-      "severity": "medium",
-      "file": "mcp/internal/providers/factory.go",
-      "line": 11,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
-    },
-    {
-      "check": "go-funcs",
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/internal/providers/gemini.go",
-      "line": 23,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
-      "check": "go-funcs",
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/internal/providers/openai.go",
-      "line": 21,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
     },
     {
-      "check": "go-funcs",
+      "check": "go-lint",
+      "severity": "medium",
+      "file": "mcp/internal/providers/provider.go",
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
+    },
+    {
+      "check": "go-lint",
       "severity": "medium",
       "file": "mcp/tests/smoke_test.go",
+      "line": 1,
+      "message": "Go file is not formatted with gofmt.",
+      "recommendation": "Run gofmt -w on this file."
+    },
+    {
+      "check": "eslint",
+      "severity": "medium",
+      "file": "src/utils/file-guard.ts",
+      "line": 30,
+      "message": "Unexpected control character(s) in regular expression: \\x00.",
+      "recommendation": "Resolve ESLint rule no-control-regex."
+    },
+    {
+      "check": "eslint",
+      "severity": "medium",
+      "file": "src/utils/markdown.ts",
+      "line": 57,
+      "message": "Spaces are hard to count. Use {2}.",
+      "recommendation": "Resolve ESLint rule no-regex-spaces."
+    },
+    {
+      "check": "eslint",
+      "severity": "medium",
+      "file": "xcm_cli/src/command-resolver.mjs",
+      "line": 4,
+      "message": "Unnecessary escape character: \\-.",
+      "recommendation": "Resolve ESLint rule no-useless-escape."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-code-smells.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-code-smells.mjs",
+      "line": 10,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-complexity.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-complexity.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-eslint.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-eslint.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-file-lines.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-file-lines.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-go-funcs.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-go-funcs.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-go-lint.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-go-lint.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-pdo-pep-templating.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-pdo-pep-templating.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-performance-memory.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-performance-memory.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-ruff.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-ruff.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-security.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-security.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-server-readiness.mjs",
+      "line": 7,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-server-readiness.mjs",
+      "line": 9,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-server-readiness.mjs",
+      "line": 10,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 12,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 13,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 14,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 15,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
       "line": 16,
-      "message": "Exported Go function without doc comment.",
-      "recommendation": "Add Go-style doc comments for exported symbols."
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
-      "check": "code-smells",
-      "severity": "medium",
-      "file": "mobile/ios/Flutter/ephemeral/flutter_lldb_helper.py",
-      "line": 24,
-      "message": "Debugger statement detected.",
-      "recommendation": "Remove debugger statements from production code."
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 17,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
-      "check": "code-smells",
-      "severity": "medium",
-      "file": "mobile/ios/Flutter/ephemeral/flutter_lldb_helper.py",
-      "line": 25,
-      "message": "Debugger statement detected.",
-      "recommendation": "Remove debugger statements from production code."
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 20,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 21,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 22,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/check-wcag-colors.mjs",
+      "line": 23,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/run-all.mjs",
+      "line": 41,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/run-all.mjs",
+      "line": 42,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/run-all.mjs",
+      "line": 43,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/run-all.mjs",
+      "line": 44,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/run-all.mjs",
+      "line": 45,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/smoke-test.mjs",
+      "line": 8,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "code_review/scripts/smoke-test.mjs",
+      "line": 10,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -307,52 +601,380 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
-      "check": "code-smells",
+      "check": "eslint",
+      "severity": "low",
+      "file": "docker/scripts/verify-macos-config.js",
+      "line": 31,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "electron/main.cjs",
+      "line": 67,
+      "message": "Unused eslint-disable directive (no problems were reported from 'no-await-in-loop').",
+      "recommendation": "Resolve the ESLint-reported issue."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/config/config.go",
+      "line": 55,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/mcp/protocol.go",
+      "line": 32,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/mcp/protocol.go",
+      "line": 71,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/mcp/protocol.go",
+      "line": 80,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 32,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 401,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/providers/anthropic.go",
+      "line": 21,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/providers/deepseek.go",
+      "line": 21,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/providers/factory.go",
+      "line": 11,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/providers/gemini.go",
+      "line": 23,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "low",
+      "file": "mcp/internal/providers/openai.go",
+      "line": 21,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "eslint",
       "severity": "low",
       "file": "mcp/scripts/live-smoke-openai.mjs",
       "line": 111,
-      "message": "Debug logging detected.",
-      "recommendation": "Use structured logger or remove before release."
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
-      "check": "code-smells",
+      "check": "eslint",
       "severity": "low",
       "file": "mcp/scripts/live-smoke-openai.mjs",
       "line": 227,
-      "message": "Debug logging detected.",
-      "recommendation": "Use structured logger or remove before release."
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
-      "check": "code-smells",
+      "check": "eslint",
       "severity": "low",
       "file": "mcp/scripts/live-smoke-openai.mjs",
       "line": 228,
-      "message": "Debug logging detected.",
-      "recommendation": "Use structured logger or remove before release."
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
-      "check": "code-smells",
+      "check": "eslint",
       "severity": "low",
       "file": "mcp/scripts/live-smoke-openai.mjs",
       "line": 229,
-      "message": "Debug logging detected.",
-      "recommendation": "Use structured logger or remove before release."
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
-      "check": "code-smells",
+      "check": "eslint",
       "severity": "low",
       "file": "mcp/scripts/live-smoke-openai.mjs",
       "line": 236,
-      "message": "Debug logging detected.",
-      "recommendation": "Use structured logger or remove before release."
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 237,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
       "severity": "low",
-      "file": "mcp/scripts/live-smoke-openai.mjs",
-      "line": 237,
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 14,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 14,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 15,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 15,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 16,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 16,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 17,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 17,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 18,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 18,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 780,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 780,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 781,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 781,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 782,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 782,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 783,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 783,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 784,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 784,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 785,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 785,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 786,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 786,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 787,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 787,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 788,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-example-pdf.js",
+      "line": 788,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -363,6 +985,14 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 135,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "pdf_tests/generate-random-pdfs.mjs",
@@ -371,12 +1001,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 136,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "pdf_tests/generate-random-pdfs.mjs",
       "line": 137,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 137,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -387,6 +1033,14 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 138,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "pdf_tests/generate-random-pdfs.mjs",
@@ -395,12 +1049,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 139,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "pdf_tests/generate-random-pdfs.mjs",
       "line": 140,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 140,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -411,12 +1081,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 151,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "pdf_tests/generate-random-pdfs.mjs",
       "line": 154,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 154,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -427,12 +1113,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 155,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "pdf_tests/generate-random-pdfs.mjs",
       "line": 156,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 156,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -443,12 +1145,36 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/agent/promote-dbl-to-main.mjs",
+      "line": 12,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
+      "check": "ruff",
+      "severity": "low",
+      "file": "scripts/email/send_pdf_email_smoke.py",
+      "line": 20,
+      "message": "E501: Line too long (103 > 100)",
+      "recommendation": "Resolve the Ruff-reported issue."
+    },
+    {
       "check": "pdo-pep-templating",
       "severity": "low",
       "file": "scripts/email/send_pdf_email_smoke.py",
       "line": 20,
       "message": "Python line length 103 exceeds 100.",
       "recommendation": "Wrap long Python lines to improve PEP readability."
+    },
+    {
+      "check": "ruff",
+      "severity": "low",
+      "file": "scripts/email/send_pdf_email_smoke.py",
+      "line": 21,
+      "message": "E501: Line too long (103 > 100)",
+      "recommendation": "Resolve the Ruff-reported issue."
     },
     {
       "check": "pdo-pep-templating",
@@ -459,12 +1185,28 @@
       "recommendation": "Wrap long Python lines to improve PEP readability."
     },
     {
+      "check": "ruff",
+      "severity": "low",
+      "file": "scripts/email/send_pdf_email_smoke.py",
+      "line": 33,
+      "message": "I001: Import block is un-sorted or un-formatted",
+      "recommendation": "Apply Ruff fix or update the code to satisfy the rule."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 111,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 111,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -475,12 +1217,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 114,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 120,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 120,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -491,12 +1249,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 128,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 137,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 137,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -507,12 +1281,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 139,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 145,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 145,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -523,12 +1313,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 147,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 158,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 158,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -539,12 +1345,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 164,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 166,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 166,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -555,12 +1377,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 170,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 172,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 172,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -571,12 +1409,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 180,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
       "line": 184,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 184,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -587,6 +1441,14 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 195,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "scripts/git/push-shared-repos.mjs",
@@ -595,9 +1457,57 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 197,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "wcag-colors",
       "severity": "low",
-      "file": "src/styles/main.css",
+      "file": "src/styles/main-agent-panel.css",
+      "line": 73,
+      "message": "Hardcoded color '#34d399' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main-agent-panel.css",
+      "line": 158,
+      "message": "Hardcoded color '#1a1d2e' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main-agent-panel.css",
+      "line": 345,
+      "message": "Hardcoded color '#8b5cf6' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main-agent-panel.css",
+      "line": 422,
+      "message": "Hardcoded color '#8b5cf6' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main-agent-panel.css",
+      "line": 593,
+      "message": "Hardcoded color '#f5f5f7' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main-foundation.css",
       "line": 140,
       "message": "WCAG AAA advisory: '.btn-primary' ratio 5.70:1 (#7c3aed on #ffffff). AAA requires 7:1.",
       "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
@@ -605,7 +1515,7 @@
     {
       "check": "wcag-colors",
       "severity": "low",
-      "file": "src/styles/main.css",
+      "file": "src/styles/main-foundation.css",
       "line": 182,
       "message": "WCAG AAA advisory: '.btn-toolbar.active' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
       "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
@@ -613,7 +1523,7 @@
     {
       "check": "wcag-colors",
       "severity": "low",
-      "file": "src/styles/main.css",
+      "file": "src/styles/main-foundation.css",
       "line": 189,
       "message": "WCAG AAA advisory: '.btn-danger' ratio 4.83:1 (#ffffff on #dc2626). AAA requires 7:1.",
       "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
@@ -621,66 +1531,10 @@
     {
       "check": "wcag-colors",
       "severity": "low",
-      "file": "src/styles/main.css",
+      "file": "src/styles/main-foundation.css",
       "line": 409,
       "message": "WCAG AAA advisory: '.properties-chip.active' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
       "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1134,
-      "message": "Hardcoded color '#34d399' in property 'background'. Replace with a CSS custom property.",
-      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1233,
-      "message": "Hardcoded color '#1a1d2e' in property 'background'. Replace with a CSS custom property.",
-      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1404,
-      "message": "Hardcoded color '#8b5cf6' in property 'background'. Replace with a CSS custom property.",
-      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1448,
-      "message": "WCAG AAA advisory: '.agent-approve-btn' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
-      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1488,
-      "message": "Hardcoded color '#8b5cf6' in property 'background'. Replace with a CSS custom property.",
-      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1525,
-      "message": "WCAG AAA advisory: '.agent-composer-send' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
-      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
-    },
-    {
-      "check": "wcag-colors",
-      "severity": "low",
-      "file": "src/styles/main.css",
-      "line": 1664,
-      "message": "Hardcoded color '#f5f5f7' in property 'background'. Replace with a CSS custom property.",
-      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
     },
     {
       "check": "code-smells",
@@ -691,12 +1545,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 20,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "xcm_cli/xcm.mjs",
       "line": 25,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 25,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -707,12 +1577,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 32,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "xcm_cli/xcm.mjs",
       "line": 33,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 33,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -723,12 +1609,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 39,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "xcm_cli/xcm.mjs",
       "line": 46,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 46,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     },
     {
       "check": "code-smells",
@@ -739,12 +1641,28 @@
       "recommendation": "Use structured logger or remove before release."
     },
     {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 51,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
+    },
+    {
       "check": "code-smells",
       "severity": "low",
       "file": "xcm_cli/xcm.mjs",
       "line": 56,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "eslint",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 56,
+      "message": "Unexpected console statement. Only these console methods are allowed: warn, error.",
+      "recommendation": "Resolve ESLint rule no-console."
     }
   ]
 }

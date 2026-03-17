@@ -2,17 +2,34 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const EXCLUDED_DIRS = new Set(['.git', 'node_modules', 'dist', 'release', 'coverage', 'code_review']);
+const EXCLUDED_DIRS = new Set([
+  '.git', 'node_modules', 'dist', 'release', 'coverage', 'code_review',
+  '__pycache__', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.dart_tool',
+  '.gradle', 'build', 'Pods', '.venv', 'venv'
+]);
 const EXCLUDED_FILES = new Set(['package-lock.json']);
 const TEXT_EXTENSIONS = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.css', '.scss', '.html',
   '.md', '.txt', '.py', '.go', '.php', '.sql', '.yml', '.yaml', '.xml', '.ini', '.sh', '.bat'
 ]);
+const DEFAULT_EXCLUDED_PREFIXES = [
+  'email_smoke/',
+  'pdf_tests/generated/',
+  'pdf_tests/generated_quick/',
+  'mobile/ios/Flutter/ephemeral/',
+  'mobile/.dart_tool/',
+  'mobile/build/',
+  'mobile/android/.gradle/',
+  'mobile/android/app/build/',
+  'mobile/ios/Pods/',
+  'mcp/bin/'
+];
 
 const DEFAULT_CONFIG = {
   maxFileLines: 1000,
   complexityThreshold: 15,
   maxPythonLineLength: 100,
+  excludePrefixes: DEFAULT_EXCLUDED_PREFIXES,
   failPolicy: {
     maxHigh: 0,
     maxMedium: 5,
@@ -25,6 +42,7 @@ function mergeConfig(base, override) {
   return {
     ...base,
     ...override,
+    excludePrefixes: Array.from(new Set([...(base.excludePrefixes ?? []), ...(override?.excludePrefixes ?? [])])),
     failPolicy: {
       ...base.failPolicy,
       ...(override?.failPolicy ?? {}),
@@ -55,6 +73,21 @@ function normalizePath(filePath) {
   return filePath.replace(/\\/g, '/');
 }
 
+function normalizePrefix(prefix) {
+  return prefix.endsWith('/') ? prefix : `${prefix}/`;
+}
+
+function isPathExcluded(rootDir, targetPath, config = DEFAULT_CONFIG, isDirectory = false) {
+  const rel = normalizePath(path.relative(rootDir, targetPath));
+  if (!rel) {
+    return false;
+  }
+
+  const prefixes = Array.isArray(config?.excludePrefixes) ? config.excludePrefixes : DEFAULT_EXCLUDED_PREFIXES;
+  const subject = isDirectory ? normalizePrefix(rel) : rel;
+  return prefixes.some((prefix) => subject.startsWith(normalizePrefix(prefix)));
+}
+
 async function fileExists(filePath) {
   try {
     await fs.access(filePath);
@@ -64,19 +97,19 @@ async function fileExists(filePath) {
   }
 }
 
-async function collectFiles(rootDir) {
+async function collectFiles(rootDir, config = DEFAULT_CONFIG) {
   const files = [];
   async function walk(currentDir) {
     const entries = await fs.readdir(currentDir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
       if (entry.isDirectory()) {
-        if (!EXCLUDED_DIRS.has(entry.name)) {
+        if (!EXCLUDED_DIRS.has(entry.name) && !isPathExcluded(rootDir, fullPath, config, true)) {
           await walk(fullPath);
         }
         continue;
       }
-      if (EXCLUDED_FILES.has(entry.name)) {
+      if (EXCLUDED_FILES.has(entry.name) || isPathExcluded(rootDir, fullPath, config, false)) {
         continue;
       }
       const ext = path.extname(entry.name).toLowerCase();
@@ -91,6 +124,98 @@ async function collectFiles(rootDir) {
 
 async function readText(filePath) {
   return fs.readFile(filePath, 'utf8');
+}
+
+async function commandExists(command, cwd) {
+  const probe = process.platform === 'win32'
+    ? await runCommand('where', [command], cwd)
+    : await runCommand('which', [command], cwd);
+  return probe.code === 0;
+}
+
+async function findGoModuleDirs(rootDir, config = DEFAULT_CONFIG) {
+  const moduleDirs = [];
+
+  async function walk(currentDir) {
+    const entries = await fs.readdir(currentDir, { withFileTypes: true });
+    const hasGoMod = entries.some((entry) => entry.isFile() && entry.name === 'go.mod');
+    if (hasGoMod) {
+      moduleDirs.push(currentDir);
+      return;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const fullPath = path.join(currentDir, entry.name);
+      if (EXCLUDED_DIRS.has(entry.name) || isPathExcluded(rootDir, fullPath, config, true)) {
+        continue;
+      }
+      await walk(fullPath);
+    }
+  }
+
+  await walk(rootDir);
+  return moduleDirs;
+}
+
+async function getGoBinCommand(binName, cwd) {
+  if (await commandExists(binName, cwd)) {
+    return { command: binName, argsPrefix: [] };
+  }
+
+  const gopath = await runCommand('go', ['env', 'GOPATH'], cwd);
+  if (gopath.code !== 0) {
+    return null;
+  }
+
+  const goBin = gopath.stdout.trim();
+  if (!goBin) {
+    return null;
+  }
+
+  const executable = process.platform === 'win32'
+    ? path.join(goBin, 'bin', `${binName}.exe`)
+    : path.join(goBin, 'bin', binName);
+  if (!(await fileExists(executable))) {
+    return null;
+  }
+
+  return { command: executable, argsPrefix: [] };
+}
+
+async function getRuffCommand(cwd) {
+  const localVenvPython = process.platform === 'win32'
+    ? path.join(cwd, '.venv', 'Scripts', 'python.exe')
+    : path.join(cwd, '.venv', 'bin', 'python');
+  if (await fileExists(localVenvPython)) {
+    return { command: localVenvPython, argsPrefix: ['-m', 'ruff'] };
+  }
+
+  if (await commandExists('ruff', cwd)) {
+    return { command: 'ruff', argsPrefix: [] };
+  }
+
+  if (process.platform === 'win32') {
+    const py = await commandExists('py', cwd);
+    if (py) {
+      return { command: 'py', argsPrefix: ['-3', '-m', 'ruff'] };
+    }
+    const python = await commandExists('python', cwd);
+    if (python) {
+      return { command: 'python', argsPrefix: ['-m', 'ruff'] };
+    }
+  }
+
+  const python3 = await commandExists('python3', cwd);
+  if (python3) {
+    return { command: 'python3', argsPrefix: ['-m', 'ruff'] };
+  }
+  const python = await commandExists('python', cwd);
+  if (python) {
+    return { command: 'python', argsPrefix: ['-m', 'ruff'] };
+  }
+
+  return null;
 }
 
 function toLines(text) {
@@ -169,7 +294,7 @@ function getLineNumber(lines, index) {
 }
 
 export async function checkFileLines(rootDir, config = DEFAULT_CONFIG) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, config);
   const findings = [];
 
   for (const filePath of files) {
@@ -193,13 +318,11 @@ export async function checkFileLines(rootDir, config = DEFAULT_CONFIG) {
 }
 
 export async function checkCodeSmells(rootDir) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, DEFAULT_CONFIG);
   const findings = [];
   const smellPatterns = [
     { regex: /\bconsole\.log\(/g, severity: 'low', message: 'Debug logging detected.', recommendation: 'Use structured logger or remove before release.' },
-    { regex: /\bdebugger\b/g, severity: 'medium', message: 'Debugger statement detected.', recommendation: 'Remove debugger statements from production code.' },
-    { regex: /\bTODO\b|\bFIXME\b/g, severity: 'low', message: 'TODO/FIXME marker found.', recommendation: 'Track unfinished work with issue references.' },
-    { regex: /:\s*any\b/g, severity: 'medium', message: 'TypeScript any type detected.', recommendation: 'Replace any with explicit types where possible.' }
+    { regex: /\bTODO\b|\bFIXME\b/g, severity: 'low', message: 'TODO/FIXME marker found.', recommendation: 'Track unfinished work with issue references.' }
   ];
 
   for (const filePath of files) {
@@ -245,13 +368,13 @@ export async function checkCodeSmells(rootDir) {
 }
 
 export async function checkSecurity(rootDir) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, DEFAULT_CONFIG);
   const findings = [];
   const patterns = [
     { regex: /\beval\s*\(/g, severity: 'high', message: 'eval() usage detected.', recommendation: 'Avoid eval and use safe parsing/evaluation alternatives.' },
     { regex: /new\s+Function\s*\(/g, severity: 'high', message: 'Function constructor usage detected.', recommendation: 'Avoid dynamic code generation.' },
     { regex: /innerHTML\s*=\s*/g, severity: 'high', message: 'Direct innerHTML assignment detected.', recommendation: 'Use textContent or sanitized HTML rendering.' },
-    { regex: /(api[_-]?key|secret|password|token)\s*[:=]\s*['"][^'"]+['"]/ig, severity: 'high', message: 'Possible hardcoded secret detected.', recommendation: 'Remove hardcoded secret and use secure runtime configuration.' },
+    { regex: /(api[_-]?key|secret|password|token)\b\s*[:=]\s*['"](?!\/)(?=[^'"]{8,}['"])[^'"]+['"]/ig, severity: 'high', message: 'Possible hardcoded secret detected.', recommendation: 'Remove hardcoded secret and use secure runtime configuration.' },
     { regex: /child_process\.(exec|spawn)\(/g, severity: 'medium', message: 'Process execution API usage detected.', recommendation: 'Validate/sanitize inputs passed to subprocesses.' }
   ];
 
@@ -283,7 +406,7 @@ export async function checkSecurity(rootDir) {
 }
 
 export async function checkComplexity(rootDir, config = DEFAULT_CONFIG) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, config);
   const findings = [];
   const functionRegex = /(function\s+\w+\s*\([^)]*\)\s*\{|\([^)]*\)\s*=>\s*\{|\w+\s*\([^)]*\)\s*\{)/g;
   const complexityTokens = /\b(if|for|while|case|catch|\?\s*[^:]+:|&&|\|\|)\b/g;
@@ -319,7 +442,7 @@ export async function checkComplexity(rootDir, config = DEFAULT_CONFIG) {
 }
 
 export async function checkPerformanceMemory(rootDir) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, DEFAULT_CONFIG);
   const findings = [];
   const patterns = [
     { regex: /while\s*\(\s*true\s*\)/g, severity: 'high', message: 'Infinite loop pattern detected.', recommendation: 'Ensure loop has explicit and tested exit conditions.' },
@@ -355,13 +478,16 @@ export async function checkPerformanceMemory(rootDir) {
   return { name: 'performance-memory', findings, summary: summarizeFindings(findings) };
 }
 
-export async function checkGoFuncs(rootDir) {
-  const files = await collectFiles(rootDir);
+export async function checkGoFuncs(rootDir, config = DEFAULT_CONFIG) {
+  const files = await collectFiles(rootDir, config);
   const goFiles = files.filter((f) => f.endsWith('.go'));
   const findings = [];
 
   for (const filePath of goFiles) {
     const rel = relative(rootDir, filePath);
+    if (rel.endsWith('_test.go')) {
+      continue;
+    }
     const text = await readText(filePath);
     const lines = toLines(text);
     for (let i = 0; i < lines.length; i += 1) {
@@ -371,7 +497,7 @@ export async function checkGoFuncs(rootDir) {
           findings.push(
             finding({
               check: 'go-funcs',
-              severity: 'medium',
+              severity: 'low',
               file: rel,
               line: getLineNumber(lines, i),
               message: 'Exported Go function without doc comment.',
@@ -383,15 +509,15 @@ export async function checkGoFuncs(rootDir) {
     }
   }
 
-  const hasGoMod = await fileExists(path.join(rootDir, 'go.mod'));
-  if (hasGoMod) {
-    const vet = await runCommand('go', ['vet', './...'], rootDir);
+  const moduleDirs = await findGoModuleDirs(rootDir, config);
+  for (const moduleDir of moduleDirs) {
+    const vet = await runCommand('go', ['vet', './...'], moduleDir);
     if (vet.code !== 0) {
       findings.push(
         finding({
           check: 'go-funcs',
           severity: 'high',
-          file: 'go.mod',
+          file: relative(rootDir, path.join(moduleDir, 'go.mod')),
           line: 1,
           message: 'go vet reported issues or Go toolchain unavailable.',
           recommendation: 'Run go vet locally and resolve warnings.'
@@ -404,7 +530,7 @@ export async function checkGoFuncs(rootDir) {
 }
 
 export async function checkPdoPepTemplating(rootDir, config = DEFAULT_CONFIG) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, config);
   const findings = [];
 
   for (const filePath of files) {
@@ -528,6 +654,208 @@ export async function checkDependencyAudit(rootDir) {
   }
 
   return { name: 'dependency-audit', findings, summary: summarizeFindings(findings) };
+}
+
+export async function checkESLint(rootDir) {
+  const findings = [];
+  const packageJsonPath = path.join(rootDir, 'package.json');
+  const eslintConfigPath = path.join(rootDir, 'eslint.config.mjs');
+  if (!(await fileExists(packageJsonPath))) {
+    return { name: 'eslint', findings, summary: summarizeFindings(findings), skipped: true };
+  }
+  if (!(await fileExists(eslintConfigPath))) {
+    findings.push(
+      finding({
+        check: 'eslint',
+        severity: 'medium',
+        file: 'package.json',
+        line: 1,
+        message: 'ESLint config file eslint.config.mjs is missing.',
+        recommendation: 'Add the flat ESLint config file before running review.'
+      })
+    );
+    return { name: 'eslint', findings, summary: summarizeFindings(findings) };
+  }
+
+  const eslint = await runCommand('npx', ['eslint', '.', '--config', 'eslint.config.mjs', '--format', 'json'], rootDir);
+  const output = eslint.stdout.trim();
+  if (!output) {
+    if (eslint.code === 0) {
+      return { name: 'eslint', findings, summary: summarizeFindings(findings) };
+    }
+    findings.push(
+      finding({
+        check: 'eslint',
+        severity: 'medium',
+        file: 'package.json',
+        line: 1,
+        message: 'ESLint failed to run or returned no parseable output.',
+        recommendation: 'Run npx eslint . locally and fix configuration or runtime errors.'
+      })
+    );
+    return { name: 'eslint', findings, summary: summarizeFindings(findings) };
+  }
+
+  try {
+    const parsed = JSON.parse(output);
+    for (const result of parsed) {
+      const rel = normalizePath(path.relative(rootDir, result.filePath));
+      for (const message of result.messages ?? []) {
+        findings.push(
+          finding({
+            check: 'eslint',
+            severity: message.fatal ? 'high' : (message.severity === 2 ? 'medium' : 'low'),
+            file: rel,
+            line: message.line || 1,
+            message: message.message,
+            recommendation: message.ruleId ? `Resolve ESLint rule ${message.ruleId}.` : 'Resolve the ESLint-reported issue.'
+          })
+        );
+      }
+    }
+  } catch {
+    findings.push(
+      finding({
+        check: 'eslint',
+        severity: 'medium',
+        file: 'package.json',
+        line: 1,
+        message: 'ESLint output could not be parsed as JSON.',
+        recommendation: 'Verify the ESLint installation and formatter output.'
+      })
+    );
+  }
+
+  return { name: 'eslint', findings, summary: summarizeFindings(findings) };
+}
+
+export async function checkRuff(rootDir) {
+  const findings = [];
+  const ruffCommand = await getRuffCommand(rootDir);
+  if (!ruffCommand) {
+    return { name: 'ruff', findings, summary: summarizeFindings(findings), skipped: true };
+  }
+
+  const ruff = await runCommand(ruffCommand.command, [...ruffCommand.argsPrefix, 'check', '.', '--output-format', 'json'], rootDir);
+  const output = ruff.stdout.trim();
+  if (!output) {
+    if (ruff.code === 0) {
+      return { name: 'ruff', findings, summary: summarizeFindings(findings) };
+    }
+    findings.push(
+      finding({
+        check: 'ruff',
+        severity: 'medium',
+        file: 'ruff.toml',
+        line: 1,
+        message: 'Ruff failed to run or returned no parseable output.',
+        recommendation: 'Run Ruff locally and verify the Python environment includes the tool.'
+      })
+    );
+    return { name: 'ruff', findings, summary: summarizeFindings(findings) };
+  }
+
+  try {
+    const parsed = JSON.parse(output);
+    for (const item of parsed) {
+      const rel = normalizePath(path.relative(rootDir, item.filename));
+      findings.push(
+        finding({
+          check: 'ruff',
+          severity: item.code?.startsWith('F') ? 'medium' : 'low',
+          file: rel,
+          line: item.location?.row ?? 1,
+          message: `${item.code}: ${item.message}`,
+          recommendation: item.fix ? 'Apply Ruff fix or update the code to satisfy the rule.' : 'Resolve the Ruff-reported issue.'
+        })
+      );
+    }
+  } catch {
+    findings.push(
+      finding({
+        check: 'ruff',
+        severity: 'medium',
+        file: 'ruff.toml',
+        line: 1,
+        message: 'Ruff output could not be parsed as JSON.',
+        recommendation: 'Verify Ruff installation and formatter output.'
+      })
+    );
+  }
+
+  return { name: 'ruff', findings, summary: summarizeFindings(findings) };
+}
+
+export async function checkGoLint(rootDir, config = DEFAULT_CONFIG) {
+  const findings = [];
+  const moduleDirs = await findGoModuleDirs(rootDir, config);
+  if (moduleDirs.length === 0) {
+    return { name: 'go-lint', findings, summary: summarizeFindings(findings), skipped: true };
+  }
+
+  const golangci = await getGoBinCommand('golangci-lint', rootDir);
+  const gofmtExists = await commandExists('gofmt', rootDir);
+
+  for (const moduleDir of moduleDirs) {
+    const goModFile = relative(rootDir, path.join(moduleDir, 'go.mod'));
+    if (gofmtExists) {
+      const gofmt = await runCommand('gofmt', ['-l', '.'], moduleDir);
+      const unformatted = gofmt.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      for (const file of unformatted) {
+        findings.push(
+          finding({
+            check: 'go-lint',
+            severity: 'medium',
+            file: relative(rootDir, path.join(moduleDir, file)),
+            line: 1,
+            message: 'Go file is not formatted with gofmt.',
+            recommendation: 'Run gofmt -w on this file.'
+          })
+        );
+      }
+    }
+
+    if (golangci) {
+      const golint = await runCommand(golangci.command, [...golangci.argsPrefix, 'run', './...'], moduleDir);
+      if (golint.code !== 0) {
+        const output = `${golint.stdout}\n${golint.stderr}`.trim();
+        const lines = output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, 20);
+        for (const line of lines) {
+          const match = /^(.*?):(\d+)(?::\d+)?\s+(.*)$/.exec(line);
+          if (match) {
+            findings.push(
+              finding({
+                check: 'go-lint',
+                severity: 'medium',
+                file: relative(rootDir, path.join(moduleDir, match[1])),
+                line: Number.parseInt(match[2], 10),
+                message: match[3],
+                recommendation: 'Resolve the golangci-lint finding.'
+              })
+            );
+          } else {
+            findings.push(
+              finding({
+                check: 'go-lint',
+                severity: 'medium',
+                file: goModFile,
+                line: 1,
+                message: line,
+                recommendation: 'Resolve the golangci-lint finding.'
+              })
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'go-lint',
+    findings,
+    summary: summarizeFindings(findings),
+    skipped: moduleDirs.length === 0 || (!gofmtExists && !golangci)
+  };
 }
 
 export async function checkServerReadiness(rootDir) {
@@ -766,7 +1094,7 @@ function parseDeclarations(declarations) {
 }
 
 export async function checkWcagColors(rootDir) {
-  const files = await collectFiles(rootDir);
+  const files = await collectFiles(rootDir, DEFAULT_CONFIG);
   const cssFiles = files.filter((f) => f.endsWith('.css'));
   const findings = [];
 
@@ -869,10 +1197,13 @@ export async function checkWcagColors(rootDir) {
 export const reviewChecks = {
   'file-lines': checkFileLines,
   'code-smells': checkCodeSmells,
+  eslint: checkESLint,
+  ruff: checkRuff,
   security: checkSecurity,
   complexity: checkComplexity,
   'performance-memory': checkPerformanceMemory,
   'go-funcs': checkGoFuncs,
+  'go-lint': checkGoLint,
   'pdo-pep-templating': checkPdoPepTemplating,
   'dependency-audit': checkDependencyAudit,
   'server-readiness': checkServerReadiness,

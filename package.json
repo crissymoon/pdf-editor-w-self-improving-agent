@@ -17,6 +17,9 @@
     "review": "node code_review/scripts/run-all.mjs",
     "review:strict": "node code_review/scripts/run-all.mjs",
     "review:advisory": "cross-env REVIEW_PROFILE=advisory node code_review/scripts/run-all.mjs",
+    "review:eslint": "node code_review/scripts/check-eslint.mjs",
+    "review:ruff": "node code_review/scripts/check-ruff.mjs",
+    "review:go-lint": "node code_review/scripts/check-go-lint.mjs",
     "review:smoke": "node code_review/scripts/smoke-test.mjs",
     "review:smells": "node code_review/scripts/check-code-smells.mjs",
     "review:security": "node code_review/scripts/check-security.mjs",
@@ -96,10 +99,14 @@
     "vite": "^7.2.7"
   },
   "devDependencies": {
+    "@eslint/js": "^9.23.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^37.7.0",
     "electron-builder": "^26.0.12",
+    "eslint": "^9.23.0",
+    "globals": "^16.0.0",
+    "typescript-eslint": "^8.28.0",
     "wait-on": "^8.0.5"
   }
 }

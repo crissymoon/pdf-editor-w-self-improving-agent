@@ -6,10 +6,13 @@ const rootDir = path.resolve(path.join(process.cwd()));
 const checks = [
   'file-lines',
   'code-smells',
+  'eslint',
+  'ruff',
   'security',
   'complexity',
   'performance-memory',
   'go-funcs',
+  'go-lint',
   'pdo-pep-templating',
   'dependency-audit',
   'server-readiness',

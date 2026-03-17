@@ -1,5 +1,7 @@
 # XCM-PDF Editor
 
+Was a basic PDF Tool from last year but 'am adding an AI Agent...
+
 A full-featured PDF Editor with crypto digital signing capabilities.
 
 **Developed for:** Leto's Angels Educational Project  

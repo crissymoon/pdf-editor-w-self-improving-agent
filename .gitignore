@@ -35,3 +35,23 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Review and lint caches
+.eslintcache
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# Generated test artifacts
+pdf_tests/generated/
+pdf_tests/generated_quick/
+
+# External dev tools and generated mobile output
+email_smoke/
+mobile/.dart_tool/
+mobile/build/
+mobile/ios/Flutter/ephemeral/
+mobile/ios/Pods/
+mobile/android/.gradle/
+
+.venv/
