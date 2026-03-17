@@ -17,16 +17,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   final _controller = PdfViewerController();
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final pdf = context.watch<PdfProvider>();
 
-    if (pdf.document == null) {
+    if (pdf.sourcePath == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Viewer')),
         body: const Center(child: Text('No document open.')),
@@ -61,8 +55,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           Expanded(
             child: Stack(
               children: [
-                PdfViewer.document(
-                  pdf.document!,
+                PdfViewer.file(
+                  pdf.sourcePath!,
                   controller: _controller,
                   params: const PdfViewerParams(
                     margin: 8,

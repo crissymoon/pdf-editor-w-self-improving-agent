@@ -11,10 +11,10 @@ import 'screens/pdf_viewer_screen.dart';
 final _router = GoRouter(
   initialLocation: '/',
   routes: [
-    GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
-    GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-    GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-    GoRoute(path: '/viewer', builder: (_, __) => const PdfViewerScreen()),
+    GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
+    GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+    GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+    GoRoute(path: '/viewer', builder: (_, _) => const PdfViewerScreen()),
   ],
 );
 

@@ -73,6 +73,7 @@ class AuthService {
     await _dio.post('/auth/register', data: {
       'email': email,
       'password': password,
+      // ignore: use_null_aware_elements
       if (name != null) 'name': name,
     });
   }

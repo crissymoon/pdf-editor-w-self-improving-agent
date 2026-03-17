@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:pdfrx/pdfrx.dart';
 
 /// Thin service that wraps pdfrx document loading.
@@ -20,7 +21,7 @@ class PdfService {
     return _document!;
   }
 
-  Future<PdfDocument> openData(List<int> data, {String? sourceName}) async {
+  Future<PdfDocument> openData(Uint8List data, {String? sourceName}) async {
     await _document?.dispose();
     _document = await PdfDocument.openData(data);
     _sourcePath = sourceName;
