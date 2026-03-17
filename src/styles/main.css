@@ -390,6 +390,103 @@ html, body {
   accent-color: var(--color-purple);
 }
 
+.properties-bar-image-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-gray-600);
+}
+
+.properties-chip {
+  height: 24px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 10px;
+}
+
+.properties-chip.active {
+  background: var(--color-purple);
+  color: var(--color-white);
+  border-color: var(--color-purple);
+}
+
+.annotation-text-editing {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 3px;
+  min-width: 40px;
+  min-height: 20px;
+  padding: 2px 4px;
+  outline: 2px solid rgba(124, 58, 237, 0.45);
+  outline-offset: 2px;
+  cursor: text;
+}
+
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--color-white);
+  background: var(--color-purple);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  padding: 0;
+}
+
+.resize-handle-n,
+.resize-handle-s {
+  left: calc(50% - 5px);
+}
+
+.resize-handle-e,
+.resize-handle-w {
+  top: calc(50% - 5px);
+}
+
+.resize-handle-n,
+.resize-handle-ne,
+.resize-handle-nw {
+  top: -6px;
+}
+
+.resize-handle-s,
+.resize-handle-se,
+.resize-handle-sw {
+  bottom: -6px;
+}
+
+.resize-handle-e,
+.resize-handle-ne,
+.resize-handle-se {
+  right: -6px;
+}
+
+.resize-handle-w,
+.resize-handle-nw,
+.resize-handle-sw {
+  left: -6px;
+}
+
+.resize-handle-n,
+.resize-handle-s {
+  cursor: ns-resize;
+}
+
+.resize-handle-e,
+.resize-handle-w {
+  cursor: ew-resize;
+}
+
+.resize-handle-ne,
+.resize-handle-sw {
+  cursor: nesw-resize;
+}
+
+.resize-handle-nw,
+.resize-handle-se {
+  cursor: nwse-resize;
+}
+
 /* Highlight drag-draw preview */
 #highlight-preview {
   position: absolute;

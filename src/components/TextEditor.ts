@@ -12,10 +12,12 @@ export class TextEditor {
   private modal: HTMLElement | null = null;
   private onSave: ((options: TextOptions) => void) | null = null;
   private initialColor: string = '#000000';
+  private initialText: string = '';
 
-  open(callback: (options: TextOptions) => void, initialColor: string = '#000000'): void {
+  open(callback: (options: TextOptions) => void, initialColor: string = '#000000', initialText: string = ''): void {
     this.onSave = callback;
     this.initialColor = initialColor;
+    this.initialText = initialText;
     this.createModal();
   }
 
@@ -93,6 +95,7 @@ export class TextEditor {
     }
 
     const textarea = this.modal.querySelector('#text-content') as HTMLTextAreaElement;
+    textarea.value = this.initialText;
     textarea.focus();
   }
 

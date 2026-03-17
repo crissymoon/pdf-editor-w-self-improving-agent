@@ -31,8 +31,18 @@ class PDFEditor {
   private isDrawingHighlight = false;
   private highlightStartX = 0;
   private highlightStartY = 0;
+  private isResizingImage = false;
+  private activeResizeHandle: 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw' | null = null;
+  private resizeStartScreenX = 0;
+  private resizeStartScreenY = 0;
+  private resizeStartWidth = 0;
+  private resizeStartHeight = 0;
+  private resizeStartX = 0;
+  private resizeStartY = 0;
   private activeHighlightColor = '#ffff00';
   private activeTextColor = '#000000';
+  private imageSizingMode: 'auto' | 'regular' = 'auto';
+  private editingTextAnnotationId: string | null = null;
   private canvasScale = 1.5;
   private history = new HistoryStack<Annotation[]>();
   private currentFilename = 'document.pdf';
@@ -169,6 +179,29 @@ class PDFEditor {
 
   private isSupportedTool(tool: string): boolean {
     return ['select', 'text', 'image', 'signature', 'highlight', 'checkbox', 'date'].includes(tool);
+  }
+
+  private preferPopupTextEditor(): boolean {
+    return window.matchMedia('(max-width: 820px), (pointer: coarse)').matches;
+  }
+
+  private getImageSizeForMode(originalWidth: number, originalHeight: number, mode: 'auto' | 'regular'): { width: number; height: number } {
+    if (mode === 'regular') {
+      return {
+        width: originalWidth,
+        height: originalHeight,
+      };
+    }
+
+    const maxSize = 200;
+    let width = originalWidth;
+    let height = originalHeight;
+    if (width > maxSize || height > maxSize) {
+      const ratio = Math.min(maxSize / width, maxSize / height);
+      width *= ratio;
+      height *= ratio;
+    }
+    return { width, height };
   }
 
   private applyActiveToolAt(x: number, y: number): boolean {
@@ -313,6 +346,12 @@ class PDFEditor {
               <input type="range" id="properties-bar-opacity" min="10" max="80" value="30">
               <span id="properties-bar-opacity-val">30%</span>
             </label>
+            <div class="properties-bar-image-controls" id="properties-bar-image-controls" hidden>
+              <span>Image size</span>
+              <button class="btn btn-toolbar properties-chip" data-image-size-mode="auto">Auto</button>
+              <button class="btn btn-toolbar properties-chip" data-image-size-mode="regular">Regular</button>
+              <button class="btn btn-toolbar properties-chip" id="properties-bar-image-apply" hidden>Apply to selected</button>
+            </div>
           </div>
 
           <div class="canvas-wrapper" id="canvas-wrapper">
@@ -395,6 +434,19 @@ class PDFEditor {
     document.getElementById('btn-redo')?.addEventListener('click', () => this.redo());
 
     document.getElementById('properties-bar')?.addEventListener('click', (e) => {
+      const modeButton = (e.target as HTMLElement).closest('[data-image-size-mode]') as HTMLElement | null;
+      if (modeButton) {
+        this.imageSizingMode = (modeButton.dataset.imageSizeMode as 'auto' | 'regular') ?? 'auto';
+        this.updatePropertiesBar();
+        return;
+      }
+
+      const applyImageButton = (e.target as HTMLElement).closest('#properties-bar-image-apply');
+      if (applyImageButton) {
+        this.applyImageSizeModeToSelected();
+        return;
+      }
+
       const swatch = (e.target as HTMLElement).closest('[data-prop-color]') as HTMLElement | null;
       if (swatch) {
         this.applyColorFromPropertiesBar(swatch.dataset.propColor!);
@@ -676,7 +728,7 @@ class PDFEditor {
       this.scheduleAutosave();
       this.updatePropertiesBar();
       toast.success('Text added');
-    }, this.activeTextColor);
+    }, this.activeTextColor, '');
   }
 
   private addImageAnnotation(x: number, y: number): void {
@@ -692,15 +744,7 @@ class PDFEditor {
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          const maxSize = 200;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > maxSize || height > maxSize) {
-            const ratio = Math.min(maxSize / width, maxSize / height);
-            width *= ratio;
-            height *= ratio;
-          }
+          const imageSize = this.getImageSizeForMode(img.width, img.height, this.imageSizingMode);
 
           const imgData: ImgData = {
             src: e.target?.result as string,
@@ -714,8 +758,8 @@ class PDFEditor {
             pageIndex: this.currentPage - 1,
             x: x / this.canvasScale,
             y: y / this.canvasScale,
-            width: width,
-            height: height,
+            width: imageSize.width,
+            height: imageSize.height,
             content: imgData,
           };
 
@@ -857,6 +901,9 @@ class PDFEditor {
         el.style.whiteSpace = 'pre-wrap';
         el.style.width = 'auto';
         el.style.height = 'auto';
+        if (this.activeTool === 'select') {
+          el.style.cursor = 'text';
+        }
         el.textContent = annotation.content as string;
         break;
       }
@@ -883,6 +930,18 @@ class PDFEditor {
         img.style.objectFit = 'contain';
         img.draggable = false;
         el.appendChild(img);
+
+        if (annotation.type === 'image' && this.activeTool === 'select' && this.selectedAnnotation?.id === annotation.id) {
+          const handles: Array<'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'> = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+          for (const handle of handles) {
+            const handleEl = document.createElement('button');
+            handleEl.type = 'button';
+            handleEl.className = `resize-handle resize-handle-${handle}`;
+            handleEl.dataset.resizeHandle = handle;
+            handleEl.title = 'Resize image';
+            el.appendChild(handleEl);
+          }
+        }
         break;
       }
 
@@ -930,11 +989,17 @@ class PDFEditor {
 
   private selectAnnotationAt(e: MouseEvent): void {
     const target = e.target as HTMLElement;
+    if (target.closest('.annotation-text-editing')) {
+      return;
+    }
+
     const annotationEl = target.closest('.annotation') as HTMLElement;
+    let selectedWasText = false;
 
     if (annotationEl) {
       const id = annotationEl.dataset.id;
       this.selectedAnnotation = this.annotations.find(a => a.id === id) || null;
+      selectedWasText = this.selectedAnnotation?.type === 'text';
     } else {
       this.selectedAnnotation = null;
     }
@@ -942,9 +1007,36 @@ class PDFEditor {
     (document.getElementById('btn-delete') as HTMLButtonElement).disabled = !this.selectedAnnotation;
     this.renderAnnotations();
     this.updatePropertiesBar();
+
+    if (this.activeTool === 'select' && selectedWasText && this.selectedAnnotation?.id) {
+      if (this.preferPopupTextEditor()) {
+        this.openTextPopupEditor(this.selectedAnnotation.id);
+      } else {
+        this.startInlineTextEdit(this.selectedAnnotation.id);
+      }
+    }
   }
 
   private handleMouseDown(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+
+    if (this.activeTool === 'select') {
+      const resizeHandle = target.closest('.resize-handle') as HTMLElement | null;
+      if (resizeHandle && this.selectedAnnotation?.type === 'image') {
+        this.snapshotAnnotations();
+        this.isResizingImage = true;
+        this.activeResizeHandle = (resizeHandle.dataset.resizeHandle as 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw') || null;
+        this.resizeStartScreenX = e.clientX;
+        this.resizeStartScreenY = e.clientY;
+        this.resizeStartWidth = this.selectedAnnotation.width;
+        this.resizeStartHeight = this.selectedAnnotation.height;
+        this.resizeStartX = this.selectedAnnotation.x;
+        this.resizeStartY = this.selectedAnnotation.y;
+        e.preventDefault();
+        return;
+      }
+    }
+
     if (this.activeTool === 'highlight') {
       const layer = document.getElementById('annotation-layer')!;
       const rect = layer.getBoundingClientRect();
@@ -955,7 +1047,6 @@ class PDFEditor {
       return;
     }
 
-    const target = e.target as HTMLElement;
     const annotationEl = target.closest('.annotation') as HTMLElement;
 
     if (annotationEl && this.activeTool === 'select') {
@@ -963,6 +1054,10 @@ class PDFEditor {
       this.selectedAnnotation = this.annotations.find(a => a.id === id) || null;
 
       if (this.selectedAnnotation) {
+        if (this.selectedAnnotation.type === 'text' && !this.preferPopupTextEditor()) {
+          e.preventDefault();
+          return;
+        }
         this.snapshotAnnotations();
         this.isDragging = true;
         const rect = annotationEl.getBoundingClientRect();
@@ -974,6 +1069,56 @@ class PDFEditor {
   }
 
   private handleMouseMove(e: MouseEvent): void {
+    if (this.isResizingImage && this.selectedAnnotation?.type === 'image' && this.activeResizeHandle) {
+      const dxPx = e.clientX - this.resizeStartScreenX;
+      const dyPx = e.clientY - this.resizeStartScreenY;
+      const dxWidth = dxPx / this.zoom;
+      const dyHeight = dyPx / this.zoom;
+      const dxPos = dxPx / (this.zoom * this.canvasScale);
+      const dyPos = dyPx / (this.zoom * this.canvasScale);
+
+      let nextWidth = this.resizeStartWidth;
+      let nextHeight = this.resizeStartHeight;
+      let nextX = this.resizeStartX;
+      let nextY = this.resizeStartY;
+
+      if (this.activeResizeHandle.includes('e')) {
+        nextWidth = this.resizeStartWidth + dxWidth;
+      }
+      if (this.activeResizeHandle.includes('s')) {
+        nextHeight = this.resizeStartHeight + dyHeight;
+      }
+      if (this.activeResizeHandle.includes('w')) {
+        nextWidth = this.resizeStartWidth - dxWidth;
+        nextX = this.resizeStartX + dxPos;
+      }
+      if (this.activeResizeHandle.includes('n')) {
+        nextHeight = this.resizeStartHeight - dyHeight;
+        nextY = this.resizeStartY + dyPos;
+      }
+
+      const minSize = 24;
+      if (nextWidth < minSize) {
+        if (this.activeResizeHandle.includes('w')) {
+          nextX = this.resizeStartX + (this.resizeStartWidth - minSize) / this.canvasScale;
+        }
+        nextWidth = minSize;
+      }
+      if (nextHeight < minSize) {
+        if (this.activeResizeHandle.includes('n')) {
+          nextY = this.resizeStartY + (this.resizeStartHeight - minSize) / this.canvasScale;
+        }
+        nextHeight = minSize;
+      }
+
+      this.selectedAnnotation.x = Math.max(0, nextX);
+      this.selectedAnnotation.y = Math.max(0, nextY);
+      this.selectedAnnotation.width = nextWidth;
+      this.selectedAnnotation.height = nextHeight;
+      this.renderAnnotations();
+      return;
+    }
+
     if (this.isDrawingHighlight) {
       const layer = document.getElementById('annotation-layer')!;
       const rect = layer.getBoundingClientRect();
@@ -1013,6 +1158,14 @@ class PDFEditor {
   }
 
   private handleMouseUp(): void {
+    if (this.isResizingImage) {
+      this.isResizingImage = false;
+      this.activeResizeHandle = null;
+      this.scheduleAutosave();
+      this.updatePropertiesBar();
+      return;
+    }
+
     if (this.isDrawingHighlight) {
       this.isDrawingHighlight = false;
       const preview = document.getElementById('highlight-preview');
@@ -1108,7 +1261,9 @@ class PDFEditor {
     const bar = document.getElementById('properties-bar');
     const label = document.getElementById('properties-bar-label');
     const swatchContainer = document.getElementById('properties-bar-swatches');
+    const divider = document.getElementById('properties-bar-divider');
     const opacityWrap = document.getElementById('properties-bar-opacity-wrap') as HTMLElement | null;
+    const imageControls = document.getElementById('properties-bar-image-controls') as HTMLElement | null;
     if (!bar || !label || !swatchContainer) return;
 
     const sel = this.selectedAnnotation;
@@ -1118,10 +1273,36 @@ class PDFEditor {
     const isTextContext =
       this.activeTool === 'text' ||
       (sel?.type === 'text' || sel?.type === 'date');
+    const isImageContext =
+      this.activeTool === 'image' ||
+      (sel?.type === 'image');
 
-    const visible = isHighlightContext || isTextContext;
+    const visible = isHighlightContext || isTextContext || isImageContext;
     bar.hidden = !visible;
     if (!visible) return;
+
+    if (isImageContext) {
+      label.textContent = 'Image sizing';
+      swatchContainer.hidden = true;
+      swatchContainer.innerHTML = '';
+      if (divider) divider.hidden = true;
+      if (opacityWrap) opacityWrap.hidden = true;
+      if (imageControls) {
+        imageControls.hidden = false;
+        imageControls.querySelectorAll<HTMLElement>('[data-image-size-mode]').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.imageSizeMode === this.imageSizingMode);
+        });
+        const applyButton = imageControls.querySelector('#properties-bar-image-apply') as HTMLButtonElement | null;
+        if (applyButton) {
+          applyButton.hidden = sel?.type !== 'image';
+        }
+      }
+      return;
+    }
+
+    swatchContainer.hidden = false;
+    if (imageControls) imageControls.hidden = true;
+    if (divider) divider.hidden = !isHighlightContext;
 
     const highlightSwatches = [
       { color: '#ffff00', label: 'Yellow' },
@@ -1187,6 +1368,105 @@ class PDFEditor {
       this.activeTextColor = color;
     }
     this.updatePropertiesBar();
+  }
+
+  private startInlineTextEdit(annotationId: string): void {
+    if (this.editingTextAnnotationId === annotationId) {
+      return;
+    }
+
+    const annotation = this.annotations.find((a) => a.id === annotationId && a.type === 'text');
+    if (!annotation) return;
+
+    const element = document.querySelector(`.annotation[data-id="${annotationId}"]`) as HTMLElement | null;
+    if (!element) return;
+
+    this.snapshotAnnotations();
+    this.editingTextAnnotationId = annotationId;
+
+    const initialValue = String(annotation.content || '');
+    element.contentEditable = 'true';
+    element.classList.add('annotation-text-editing');
+    element.focus();
+
+    const selection = window.getSelection();
+    if (selection) {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    const finish = (save: boolean): void => {
+      const nextValue = element.textContent?.trim() ?? '';
+      element.contentEditable = 'false';
+      element.classList.remove('annotation-text-editing');
+      element.removeEventListener('blur', onBlur);
+      element.removeEventListener('keydown', onKeyDown);
+      this.editingTextAnnotationId = null;
+
+      if (!save) {
+        annotation.content = initialValue;
+      } else {
+        annotation.content = nextValue || initialValue;
+      }
+      this.renderAnnotations();
+      this.scheduleAutosave();
+      this.updatePropertiesBar();
+    };
+
+    const onBlur = (): void => finish(true);
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        finish(false);
+      } else if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        (event.currentTarget as HTMLElement).blur();
+      }
+    };
+
+    element.addEventListener('blur', onBlur);
+    element.addEventListener('keydown', onKeyDown);
+  }
+
+  private openTextPopupEditor(annotationId: string): void {
+    const annotation = this.annotations.find((a) => a.id === annotationId && a.type === 'text');
+    if (!annotation) return;
+
+    const currentText = String(annotation.content || '');
+    const currentColor = annotation.style?.color || this.activeTextColor;
+    textEditor.open((options) => {
+      this.snapshotAnnotations();
+      this.activeTextColor = options.color;
+      annotation.content = options.text;
+      annotation.style = {
+        ...annotation.style,
+        fontSize: options.fontSize,
+        fontFamily: options.fontFamily,
+        color: options.color,
+      };
+      annotation.height = options.fontSize + 4;
+      this.renderAnnotations();
+      this.scheduleAutosave();
+      this.updatePropertiesBar();
+      toast.success('Text updated');
+    }, currentColor, currentText);
+  }
+
+  private applyImageSizeModeToSelected(): void {
+    if (!this.selectedAnnotation || this.selectedAnnotation.type !== 'image') return;
+    const imageData = this.selectedAnnotation.content as ImgData;
+    const nextSize = this.getImageSizeForMode(imageData.originalWidth, imageData.originalHeight, this.imageSizingMode);
+
+    this.snapshotAnnotations();
+    this.selectedAnnotation.width = nextSize.width;
+    this.selectedAnnotation.height = nextSize.height;
+    this.renderAnnotations();
+    this.scheduleAutosave();
+    this.updatePropertiesBar();
+    toast.success(this.imageSizingMode === 'auto' ? 'Auto size applied' : 'Regular size applied');
   }
 
   private scheduleAutosave(): void {
