@@ -217,7 +217,7 @@ class AgentPanel {
     if (!call) {
       this.appendMessage({
         role: 'assistant',
-        text: 'Could not map that to a tool. Try: status, save pdf, zoom in, page 2, or /tool.name {"arg":"val"}.',
+        text: 'Could not map that to a tool. Try: status, save pdf, zoom in, page 2, email pdf to name@example.com, or /tool.name {"arg":"val"}.',
       });
       return;
     }
@@ -338,6 +338,26 @@ class AgentPanel {
     }
     if (lower.includes('save')) {
       return { name: 'editor.save_pdf', arguments: {} };
+    }
+    if ((lower.includes('email') || lower.includes('send')) && (lower.includes('pdf') || lower.includes('document') || lower.includes('file'))) {
+      const toMatch = message.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+      if (!toMatch) {
+        return null;
+      }
+
+      const subjectMatch = message.match(/subject\s*[:=]\s*"([^"]+)"|subject\s*[:=]\s*'([^']+)'|subject\s*[:=]\s*([^,;]+)/i);
+      const bodyMatch = message.match(/body\s*[:=]\s*"([^"]+)"|body\s*[:=]\s*'([^']+)'|body\s*[:=]\s*([^,;]+)/i);
+      const subject = (subjectMatch?.[1] || subjectMatch?.[2] || subjectMatch?.[3] || '').trim();
+      const body = (bodyMatch?.[1] || bodyMatch?.[2] || bodyMatch?.[3] || '').trim();
+
+      return {
+        name: 'editor.email_pdf',
+        arguments: {
+          to: toMatch[0],
+          ...(subject ? { subject } : {}),
+          ...(body ? { body } : {}),
+        },
+      };
     }
     if (lower.includes('zoom in')) {
       return { name: 'editor.zoom_in', arguments: {} };

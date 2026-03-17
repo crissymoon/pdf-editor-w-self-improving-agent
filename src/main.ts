@@ -40,6 +40,7 @@ class PDFEditor {
   private resizeStartX = 0;
   private resizeStartY = 0;
   private activePointerId: number | null = null;
+  private activeTouchPointerIds = new Set<number>();
   private activeHighlightColor = '#ffff00';
   private activeTextColor = '#000000';
   private imageSizingMode: 'auto' | 'regular' = 'auto';
@@ -117,6 +118,13 @@ class PDFEditor {
       case 'save_pdf':
         await this.savePDF();
         return { ok: true, message: 'Save command executed' };
+      case 'email_pdf': {
+        const to = String(request.arguments?.to ?? '').trim();
+        const subject = String(request.arguments?.subject ?? '').trim();
+        const body = String(request.arguments?.body ?? '').trim();
+        const result = await this.emailCurrentPDF({ to, subject, body });
+        return result;
+      }
       case 'set_tool': {
         const tool = String(request.arguments?.tool ?? '').trim();
         if (!this.isSupportedTool(tool)) {
@@ -203,6 +211,33 @@ class PDFEditor {
       height *= ratio;
     }
     return { width, height };
+  }
+
+  private updateTouchPointers(e: PointerEvent, isDown: boolean): void {
+    if (e.pointerType !== 'touch') return;
+    if (isDown) {
+      this.activeTouchPointerIds.add(e.pointerId);
+    } else {
+      this.activeTouchPointerIds.delete(e.pointerId);
+    }
+  }
+
+  private isMultiTouchGesture(): boolean {
+    return this.activeTouchPointerIds.size > 1;
+  }
+
+  private clearActiveInteractionState(): void {
+    const layer = document.getElementById('annotation-layer');
+    if (this.activePointerId !== null && layer?.hasPointerCapture(this.activePointerId)) {
+      layer.releasePointerCapture(this.activePointerId);
+    }
+
+    this.activePointerId = null;
+    this.isDragging = false;
+    this.isDrawingHighlight = false;
+    this.isResizingImage = false;
+    this.activeResizeHandle = null;
+    document.getElementById('highlight-preview')?.remove();
   }
 
   private applyActiveToolAt(x: number, y: number): boolean {
@@ -1023,6 +1058,13 @@ class PDFEditor {
     const target = e.target as HTMLElement;
 
     if (e instanceof PointerEvent) {
+      this.updateTouchPointers(e, true);
+      if (this.isMultiTouchGesture()) {
+        // Ignore annotation interactions during pinch/two-finger gestures.
+        this.clearActiveInteractionState();
+        return;
+      }
+
       this.activePointerId = e.pointerId;
       const layer = document.getElementById('annotation-layer');
       layer?.setPointerCapture(e.pointerId);
@@ -1077,6 +1119,10 @@ class PDFEditor {
   }
 
   private handleMouseMove(e: MouseEvent | PointerEvent): void {
+    if (e instanceof PointerEvent && e.pointerType === 'touch' && this.isMultiTouchGesture()) {
+      return;
+    }
+
     if (e instanceof PointerEvent && this.activePointerId !== null && e.pointerId !== this.activePointerId) {
       return;
     }
@@ -1170,6 +1216,15 @@ class PDFEditor {
   }
 
   private handleMouseUp(e?: MouseEvent | PointerEvent): void {
+    if (e instanceof PointerEvent) {
+      this.updateTouchPointers(e, false);
+    }
+
+    if (this.isMultiTouchGesture()) {
+      this.clearActiveInteractionState();
+      return;
+    }
+
     if (e instanceof PointerEvent && this.activePointerId !== null && e.pointerId !== this.activePointerId) {
       return;
     }
@@ -1554,6 +1609,68 @@ class PDFEditor {
     });
   }
 
+  private async buildCurrentPDFBytes(): Promise<Uint8Array> {
+    const scaleRatio = 1 / this.canvasScale;
+    const scaledAnnotations = this.annotations.map(a => ({
+      ...a,
+      x: a.x * scaleRatio * this.canvasScale,
+      y: a.y * scaleRatio * this.canvasScale,
+      width: a.width * scaleRatio,
+      height: a.height * scaleRatio,
+    }));
+    return pdfService.applyAnnotationsAndSave(scaledAnnotations);
+  }
+
+  private async emailCurrentPDF(input: { to: string; subject?: string; body?: string }): Promise<EditorCommandResult> {
+    if (!this.pdfData) {
+      return { ok: false, message: 'No PDF loaded' };
+    }
+    if (!input.to) {
+      return { ok: false, message: 'Recipient email is required (to).' };
+    }
+
+    const bridge = window.xcmPdfDesktop;
+    if (!bridge?.emailPDF) {
+      return {
+        ok: false,
+        message: 'Desktop email bridge is unavailable. Run in Electron with preload enabled.',
+      };
+    }
+
+    try {
+      toast.info('Preparing PDF for email...');
+      const pdfBytes = await this.buildCurrentPDFBytes();
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < pdfBytes.length; i += chunkSize) {
+        const chunk = pdfBytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+      }
+      const base64 = btoa(binary);
+
+      const response = await bridge.emailPDF({
+        to: input.to,
+        subject: input.subject || `XCM-PDF: ${this.currentFilename || 'document'}`,
+        body: input.body || 'Attached is your PDF from XCM-PDF.',
+        filename: this.currentFilename || 'xcm-pdf-edited.pdf',
+        pdfBytesBase64: base64,
+      });
+
+      if (!response?.ok) {
+        const msg = response?.message || 'Email send failed';
+        toast.error(msg);
+        return { ok: false, message: msg };
+      }
+
+      toast.success('Email request completed');
+      return { ok: true, message: response.message || 'Email sent' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown email error';
+      toast.error(message);
+      return { ok: false, message };
+    }
+  }
+
   private async savePDF(): Promise<void> {
     if (!this.pdfData) {
       toast.error('No PDF loaded');
@@ -1563,16 +1680,7 @@ class PDFEditor {
     try {
       toast.info('Saving PDF...');
 
-      const scaleRatio = 1 / this.canvasScale;
-      const scaledAnnotations = this.annotations.map(a => ({
-        ...a,
-        x: a.x * scaleRatio * this.canvasScale,
-        y: a.y * scaleRatio * this.canvasScale,
-        width: a.width * scaleRatio,
-        height: a.height * scaleRatio,
-      }));
-
-      const pdfBytes = await pdfService.applyAnnotationsAndSave(scaledAnnotations);
+      const pdfBytes = await this.buildCurrentPDFBytes();
 
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);

@@ -12,6 +12,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "generate-example": "node generate-example-pdf.js",
+    "pdf-tests:generate": "node pdf_tests/generate-random-pdfs.mjs",
+    "pdf-tests:generate:quick": "node pdf_tests/generate-random-pdfs.mjs --count=10 --min-pages=1 --max-pages=4",
     "review": "node code_review/scripts/run-all.mjs",
     "review:strict": "node code_review/scripts/run-all.mjs",
     "review:advisory": "cross-env REVIEW_PROFILE=advisory node code_review/scripts/run-all.mjs",

@@ -104,6 +104,20 @@ export function createMainAgentTools(runner: EditorCommandRunner): AgentToolDefi
       () => runner.run({ command: 'delete_selected_annotation' }),
     ),
     buildTool(
+      'editor.email_pdf',
+      'Email the current PDF (with annotations) through desktop email_smoke integration.',
+      {
+        type: 'object',
+        properties: {
+          to: { type: 'string' },
+          subject: { type: 'string' },
+          body: { type: 'string' },
+        },
+        required: ['to'],
+      },
+      (argumentsMap) => runner.run({ command: 'email_pdf', arguments: argumentsMap }),
+    ),
+    buildTool(
       'editor.get_status',
       'Get current editor status summary.',
       { type: 'object', properties: {} },

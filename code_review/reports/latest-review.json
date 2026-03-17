@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-17T02:34:17.767Z",
+  "generatedAt": "2026-03-17T05:29:49.263Z",
   "rootDir": "C:\\Users\\criss\\Desktop\\pdf-editor\\pdf-editor",
   "profile": "strict",
   "config": {
@@ -21,10 +21,10 @@
     }
   },
   "summary": {
-    "total": 38,
-    "low": 19,
-    "medium": 17,
-    "high": 2
+    "total": 89,
+    "low": 56,
+    "medium": 19,
+    "high": 14
   },
   "smoke": [
     {
@@ -46,9 +46,105 @@
       "check": "security",
       "severity": "high",
       "file": "src/components/AgentPanel.ts",
-      "line": 18,
+      "line": 50,
       "message": "Direct innerHTML assignment detected.",
       "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/components/AgentPanel.ts",
+      "line": 107,
+      "message": "Direct innerHTML assignment detected.",
+      "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/components/AgentPanel.ts",
+      "line": 432,
+      "message": "Direct innerHTML assignment detected.",
+      "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "file-lines",
+      "severity": "high",
+      "file": "src/main.ts",
+      "line": 1,
+      "message": "File has 1705 lines, exceeds limit 1000",
+      "recommendation": "Split this file into smaller modules by concern."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/main.ts",
+      "line": 1366,
+      "message": "Direct innerHTML assignment detected.",
+      "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/main.ts",
+      "line": 1414,
+      "message": "Direct innerHTML assignment detected.",
+      "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/main.ts",
+      "line": 1581,
+      "message": "Direct innerHTML assignment detected.",
+      "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "file-lines",
+      "severity": "high",
+      "file": "src/styles/main.css",
+      "line": 1,
+      "message": "File has 1814 lines, exceeds limit 1000",
+      "recommendation": "Split this file into smaller modules by concern."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/utils/file-guard.ts",
+      "line": 47,
+      "message": "Possible hardcoded secret detected.",
+      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/utils/file-guard.ts",
+      "line": 48,
+      "message": "Possible hardcoded secret detected.",
+      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/utils/file-guard.ts",
+      "line": 49,
+      "message": "Possible hardcoded secret detected.",
+      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/utils/file-guard.ts",
+      "line": 50,
+      "message": "Possible hardcoded secret detected.",
+      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/utils/file-guard.ts",
+      "line": 51,
+      "message": "Possible hardcoded secret detected.",
+      "recommendation": "Remove hardcoded secret and use secure runtime configuration."
     },
     {
       "check": "go-funcs",
@@ -188,6 +284,22 @@
     },
     {
       "check": "code-smells",
+      "severity": "medium",
+      "file": "mobile/ios/Flutter/ephemeral/flutter_lldb_helper.py",
+      "line": 24,
+      "message": "Debugger statement detected.",
+      "recommendation": "Remove debugger statements from production code."
+    },
+    {
+      "check": "code-smells",
+      "severity": "medium",
+      "file": "mobile/ios/Flutter/ephemeral/flutter_lldb_helper.py",
+      "line": 25,
+      "message": "Debugger statement detected.",
+      "recommendation": "Remove debugger statements from production code."
+    },
+    {
+      "check": "code-smells",
       "severity": "low",
       "file": "docker/scripts/verify-macos-config.js",
       "line": 31,
@@ -245,8 +357,240 @@
     {
       "check": "code-smells",
       "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 135,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 136,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 137,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 138,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 139,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 140,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 151,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 154,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 155,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "pdf_tests/generate-random-pdfs.mjs",
+      "line": 156,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
       "file": "scripts/agent/promote-dbl-to-main.mjs",
       "line": 12,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "pdo-pep-templating",
+      "severity": "low",
+      "file": "scripts/email/send_pdf_email_smoke.py",
+      "line": 20,
+      "message": "Python line length 103 exceeds 100.",
+      "recommendation": "Wrap long Python lines to improve PEP readability."
+    },
+    {
+      "check": "pdo-pep-templating",
+      "severity": "low",
+      "file": "scripts/email/send_pdf_email_smoke.py",
+      "line": 21,
+      "message": "Python line length 103 exceeds 100.",
+      "recommendation": "Wrap long Python lines to improve PEP readability."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 111,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 114,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 120,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 128,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 137,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 139,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 145,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 147,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 158,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 164,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 166,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 170,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 172,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 180,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 184,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 195,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/git/push-shared-repos.mjs",
+      "line": 197,
       "message": "Debug logging detected.",
       "recommendation": "Use structured logger or remove before release."
     },
@@ -273,6 +617,70 @@
       "line": 189,
       "message": "WCAG AAA advisory: '.btn-danger' ratio 4.83:1 (#ffffff on #dc2626). AAA requires 7:1.",
       "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 409,
+      "message": "WCAG AAA advisory: '.properties-chip.active' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
+      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1134,
+      "message": "Hardcoded color '#34d399' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1233,
+      "message": "Hardcoded color '#1a1d2e' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1404,
+      "message": "Hardcoded color '#8b5cf6' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1448,
+      "message": "WCAG AAA advisory: '.agent-approve-btn' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
+      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1488,
+      "message": "Hardcoded color '#8b5cf6' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1525,
+      "message": "WCAG AAA advisory: '.agent-composer-send' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
+      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 1664,
+      "message": "Hardcoded color '#f5f5f7' in property 'background'. Replace with a CSS custom property.",
+      "recommendation": "Define this value as a --color-* variable in :root and reference it via var()."
     },
     {
       "check": "code-smells",

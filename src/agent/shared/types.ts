@@ -11,6 +11,7 @@ export type EditorCommandName =
   | 'zoom_out'
   | 'go_to_page'
   | 'delete_selected_annotation'
+  | 'email_pdf'
   | 'get_status';
 
 export interface EditorCommandRequest {
