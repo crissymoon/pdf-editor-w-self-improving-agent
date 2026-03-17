@@ -1,19 +1,19 @@
 import { spawn } from "node:child_process";
 
-// On Windows, npm/npx are .cmd batch files and cannot be invoked directly
-// without the shell. Using the .cmd extension avoids shell:true (which
-// triggers DEP0190 because args are concatenated, not escaped).
-const CMD_ALIASES = new Set(["npm", "npx"]);
-function resolveCmd(command) {
-  if (process.platform === "win32" && CMD_ALIASES.has(command)) {
-    return command + ".cmd";
+// On Windows, batch files (.cmd) cannot be executed by CreateProcess directly
+// and require cmd.exe. Passing argv as separate elements to cmd.exe /c avoids
+// the DEP0190 warning (which fires when shell:true concatenates args as a string).
+function buildSpawnArgs(command, args) {
+  if (process.platform === "win32") {
+    return { cmd: "cmd.exe", args: ["/c", command, ...args] };
   }
-  return command;
+  return { cmd: command, args };
 }
 
 export function runCommand(command, args, options = {}) {
+  const { cmd, args: spawnArgs } = buildSpawnArgs(command, args);
   return new Promise((resolve, reject) => {
-    const child = spawn(resolveCmd(command), args, {
+    const child = spawn(cmd, spawnArgs, {
       stdio: "inherit",
       shell: false,
       cwd: options.cwd || process.cwd(),
