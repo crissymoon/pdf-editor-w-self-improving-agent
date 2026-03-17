@@ -351,5 +351,5 @@ For issues or questions, please contact XcaliburMoon Web Development.
 
 ---
 
-**© 2025 XcaliburMoon Web Development**  
+**© 2026 XcaliburMoon Web Development**  
 **Leto's Angels Educational Project**
