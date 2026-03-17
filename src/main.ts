@@ -39,6 +39,7 @@ class PDFEditor {
   private resizeStartHeight = 0;
   private resizeStartX = 0;
   private resizeStartY = 0;
+  private activePointerId: number | null = null;
   private activeHighlightColor = '#ffff00';
   private activeTextColor = '#000000';
   private imageSizingMode: 'auto' | 'regular' = 'auto';
@@ -483,10 +484,11 @@ class PDFEditor {
 
     const annotationLayer = document.getElementById('annotation-layer');
     annotationLayer?.addEventListener('click', (e) => this.handleCanvasClick(e));
-    annotationLayer?.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-    annotationLayer?.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-    annotationLayer?.addEventListener('mouseup', () => this.handleMouseUp());
-    annotationLayer?.addEventListener('mouseleave', () => this.handleMouseUp());
+    annotationLayer?.addEventListener('pointerdown', (e) => this.handleMouseDown(e));
+    annotationLayer?.addEventListener('pointermove', (e) => this.handleMouseMove(e));
+    annotationLayer?.addEventListener('pointerup', (e) => this.handleMouseUp(e));
+    annotationLayer?.addEventListener('pointercancel', (e) => this.handleMouseUp(e));
+    annotationLayer?.addEventListener('pointerleave', (e) => this.handleMouseUp(e));
   }
 
   private openFilePicker(): void {
@@ -1017,8 +1019,14 @@ class PDFEditor {
     }
   }
 
-  private handleMouseDown(e: MouseEvent): void {
+  private handleMouseDown(e: MouseEvent | PointerEvent): void {
     const target = e.target as HTMLElement;
+
+    if (e instanceof PointerEvent) {
+      this.activePointerId = e.pointerId;
+      const layer = document.getElementById('annotation-layer');
+      layer?.setPointerCapture(e.pointerId);
+    }
 
     if (this.activeTool === 'select') {
       const resizeHandle = target.closest('.resize-handle') as HTMLElement | null;
@@ -1068,7 +1076,11 @@ class PDFEditor {
     }
   }
 
-  private handleMouseMove(e: MouseEvent): void {
+  private handleMouseMove(e: MouseEvent | PointerEvent): void {
+    if (e instanceof PointerEvent && this.activePointerId !== null && e.pointerId !== this.activePointerId) {
+      return;
+    }
+
     if (this.isResizingImage && this.selectedAnnotation?.type === 'image' && this.activeResizeHandle) {
       const dxPx = e.clientX - this.resizeStartScreenX;
       const dyPx = e.clientY - this.resizeStartScreenY;
@@ -1157,7 +1169,19 @@ class PDFEditor {
     this.renderAnnotations();
   }
 
-  private handleMouseUp(): void {
+  private handleMouseUp(e?: MouseEvent | PointerEvent): void {
+    if (e instanceof PointerEvent && this.activePointerId !== null && e.pointerId !== this.activePointerId) {
+      return;
+    }
+
+    if (e instanceof PointerEvent && this.activePointerId !== null) {
+      const layer = document.getElementById('annotation-layer');
+      if (layer?.hasPointerCapture(this.activePointerId)) {
+        layer.releasePointerCapture(this.activePointerId);
+      }
+    }
+    this.activePointerId = null;
+
     if (this.isResizingImage) {
       this.isResizingImage = false;
       this.activeResizeHandle = null;

@@ -311,6 +311,7 @@ html, body {
 
 .annotation-layer.active {
   pointer-events: auto;
+  touch-action: none;
 }
 
 /* Properties Bar */
@@ -431,6 +432,7 @@ html, body {
   background: var(--color-purple);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   padding: 0;
+  touch-action: none;
 }
 
 .resize-handle-n,
@@ -485,6 +487,47 @@ html, body {
 .resize-handle-nw,
 .resize-handle-se {
   cursor: nwse-resize;
+}
+
+@media (pointer: coarse) {
+  .resize-handle {
+    width: 16px;
+    height: 16px;
+  }
+
+  .resize-handle-n,
+  .resize-handle-s {
+    left: calc(50% - 8px);
+  }
+
+  .resize-handle-e,
+  .resize-handle-w {
+    top: calc(50% - 8px);
+  }
+
+  .resize-handle-n,
+  .resize-handle-ne,
+  .resize-handle-nw {
+    top: -9px;
+  }
+
+  .resize-handle-s,
+  .resize-handle-se,
+  .resize-handle-sw {
+    bottom: -9px;
+  }
+
+  .resize-handle-e,
+  .resize-handle-ne,
+  .resize-handle-se {
+    right: -9px;
+  }
+
+  .resize-handle-w,
+  .resize-handle-nw,
+  .resize-handle-sw {
+    left: -9px;
+  }
 }
 
 /* Highlight drag-draw preview */
