@@ -35,6 +35,7 @@ import {
   updatePropertiesBar,
 } from './editor/properties';
 import { renderEditorShell } from './editor/render-shell';
+import { requireEditorLogin } from './components/login-gate';
 
 class PDFEditor {
   private currentPage = 1;
@@ -1021,4 +1022,9 @@ class PDFEditor {
   }
 }
 
-new PDFEditor();
+async function bootstrap(): Promise<void> {
+  await requireEditorLogin();
+  new PDFEditor();
+}
+
+void bootstrap();

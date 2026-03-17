@@ -1,0 +1,189 @@
+/* ============================================================
+   Login Gate
+   ============================================================ */
+
+.xcm-login-shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.xcm-login-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 420px at -6% -10%, rgba(56, 189, 248, 0.24), transparent 60%),
+    radial-gradient(900px 420px at 110% 0%, rgba(124, 58, 237, 0.22), transparent 62%),
+    linear-gradient(150deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.16));
+}
+
+.xcm-login-modal {
+  position: relative;
+  z-index: 2;
+  width: min(440px, 100%);
+  padding: 24px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 20px 48px rgba(31, 41, 55, 0.16),
+    0 2px 8px rgba(124, 58, 237, 0.16);
+}
+
+.xcm-login-brand {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-purple-dark);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.xcm-login-title {
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--color-gray-900);
+  margin-bottom: 8px;
+}
+
+.xcm-login-subtitle {
+  font-size: 13px;
+  color: var(--color-gray-600);
+  margin-bottom: 18px;
+}
+
+.xcm-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xcm-login-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-gray-700);
+  margin-top: 4px;
+}
+
+.xcm-login-input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  color: var(--color-gray-900);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.xcm-login-input:focus {
+  outline: none;
+  border-color: rgba(124, 58, 237, 0.55);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.xcm-login-input:-webkit-autofill,
+.xcm-login-input:-webkit-autofill:hover,
+.xcm-login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.88) inset;
+  -webkit-text-fill-color: var(--color-gray-900);
+  transition: background-color 99999s ease-in-out 0s;
+}
+
+.xcm-login-password-wrap {
+  position: relative;
+}
+
+.xcm-login-input-compact {
+  font-size: 13px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.xcm-login-input-password {
+  padding-right: 72px;
+}
+
+.xcm-login-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--color-gray-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 0;
+}
+
+.xcm-login-password-toggle:hover {
+  color: var(--color-gray-700);
+}
+
+.xcm-login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-gray-700);
+  margin-top: 2px;
+}
+
+.xcm-login-remember input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+}
+
+.xcm-login-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.xcm-login-submit,
+.xcm-login-switch {
+  flex: 1;
+}
+
+.xcm-login-switch {
+  color: var(--color-gray-800);
+}
+
+.xcm-login-status {
+  min-height: 20px;
+  font-size: 12px;
+  color: var(--color-danger-dark);
+  margin-top: 6px;
+}
+
+.xcm-login-dev-info {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-gray-500);
+}
+
+.xcm-login-note {
+  margin-top: 0;
+  font-size: 11px;
+  color: var(--color-gray-500);
+}
+
+@media (max-width: 520px) {
+  .xcm-login-modal {
+    padding: 20px;
+  }
+
+  .xcm-login-row {
+    flex-direction: column;
+  }
+}

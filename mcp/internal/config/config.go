@@ -29,18 +29,34 @@ type Config struct {
 	DefaultProvider      string
 	MaxConcurrentActions int
 	RequestTimeout       time.Duration
+	FileTools            FileToolsConfig
 	OpenAI               ProviderConfig
 	DeepSeek             ProviderConfig
 	Anthropic            ProviderConfig
 	Gemini               ProviderConfig
 }
 
+type FileToolsConfig struct {
+	Enabled      bool
+	SandboxDirs  []string
+	MaxReadBytes int
+	MaxWriteBytes int
+}
+
 type fileSettings struct {
 	DefaultProvider string               `json:"default_provider"`
+	FileTools       fileToolsSettings    `json:"file_tools"`
 	OpenAI          fileProviderSettings `json:"openai"`
 	DeepSeek        fileProviderSettings `json:"deepseek"`
 	Anthropic       fileProviderSettings `json:"anthropic"`
 	Gemini          fileProviderSettings `json:"gemini"`
+}
+
+type fileToolsSettings struct {
+	Enabled      *bool    `json:"enabled"`
+	SandboxDirs  []string `json:"sandbox_dirs"`
+	MaxReadBytes int      `json:"max_read_bytes"`
+	MaxWriteBytes int     `json:"max_write_bytes"`
 }
 
 type fileProviderSettings struct {
@@ -53,9 +69,25 @@ type fileProviderSettings struct {
 }
 
 func Load() (Config, error) {
-	settings, err := loadSettingsFile(envString("MCP_SETTINGS_PATH", "settings.json"))
+	settings, settingsBaseDir, err := loadSettingsFile(envString("MCP_SETTINGS_PATH", "settings.json"))
 	if err != nil {
 		return Config{}, err
+	}
+
+	sandboxDirs := resolveSandboxDirs(settings.FileTools.SandboxDirs, settingsBaseDir)
+	fileToolsEnabled := len(sandboxDirs) > 0
+	if settings.FileTools.Enabled != nil {
+		fileToolsEnabled = *settings.FileTools.Enabled
+	}
+
+	maxReadBytes := settings.FileTools.MaxReadBytes
+	if maxReadBytes <= 0 {
+		maxReadBytes = 262144
+	}
+
+	maxWriteBytes := settings.FileTools.MaxWriteBytes
+	if maxWriteBytes <= 0 {
+		maxWriteBytes = 262144
 	}
 
 	maxConcurrent := envInt("MCP_MAX_CONCURRENCY", 8)
@@ -74,6 +106,12 @@ func Load() (Config, error) {
 		DefaultProvider:      strings.ToLower(firstNonEmpty(envString("MCP_DEFAULT_PROVIDER", ""), settings.DefaultProvider, "openai")),
 		MaxConcurrentActions: maxConcurrent,
 		RequestTimeout:       time.Duration(requestTimeoutSec) * time.Second,
+		FileTools: FileToolsConfig{
+			Enabled:      fileToolsEnabled,
+			SandboxDirs:  sandboxDirs,
+			MaxReadBytes: maxReadBytes,
+			MaxWriteBytes: maxWriteBytes,
+		},
 		OpenAI: ProviderConfig{
 			APIKey:            firstNonEmpty(strings.TrimSpace(os.Getenv("OPENAI_API_KEY")), resolveKey(settings.OpenAI)),
 			BaseURL:           firstNonEmpty(strings.TrimSpace(os.Getenv("OPENAI_BASE_URL")), settings.OpenAI.BaseURL, "https://api.openai.com"),
@@ -166,26 +204,61 @@ func firstCSV(key string, fromSettings []string, fallback []string) []string {
 	return fallback
 }
 
-func loadSettingsFile(pathValue string) (fileSettings, error) {
+func loadSettingsFile(pathValue string) (fileSettings, string, error) {
 	settingsPath := strings.TrimSpace(pathValue)
 	if settingsPath == "" {
-		return fileSettings{}, nil
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fileSettings{}, "", nil
+		}
+		return fileSettings{}, cwd, nil
 	}
 
 	expanded := expandHome(settingsPath)
+	baseDir := filepath.Dir(expanded)
 	raw, err := os.ReadFile(expanded)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fileSettings{}, nil
+			return fileSettings{}, baseDir, nil
 		}
-		return fileSettings{}, fmt.Errorf("failed to read settings file: %w", err)
+		return fileSettings{}, "", fmt.Errorf("failed to read settings file: %w", err)
 	}
 
 	var parsed fileSettings
 	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return fileSettings{}, fmt.Errorf("invalid settings json: %w", err)
+		return fileSettings{}, "", fmt.Errorf("invalid settings json: %w", err)
 	}
-	return parsed, nil
+	return parsed, baseDir, nil
+}
+
+func resolveSandboxDirs(values []string, baseDir string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]struct{}{}
+
+	for _, raw := range values {
+		clean := strings.TrimSpace(raw)
+		if clean == "" {
+			continue
+		}
+
+		clean = expandHome(clean)
+		if !filepath.IsAbs(clean) {
+			clean = filepath.Join(baseDir, clean)
+		}
+
+		abs, err := filepath.Abs(clean)
+		if err != nil {
+			continue
+		}
+
+		if _, ok := seen[abs]; ok {
+			continue
+		}
+		seen[abs] = struct{}{}
+		out = append(out, abs)
+	}
+
+	return out
 }
 
 func resolveKey(provider fileProviderSettings) string {

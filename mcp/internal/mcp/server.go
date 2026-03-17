@@ -228,6 +228,8 @@ func (s *Server) handleToolCall(ctx context.Context, rawParams json.RawMessage) 
 				"text": result,
 			}},
 		}, 0, nil
+	case "file.sandbox", "file.list", "file.read", "file.write", "file.mkdir", "file.move", "file.delete":
+		return s.handleFileToolCall(ctx, params.Name, params.Arguments)
 	default:
 		return nil, -32601, fmt.Errorf("tool not found: %s", params.Name)
 	}
@@ -250,7 +252,7 @@ func (s *Server) availableProviders() []string {
 }
 
 func (s *Server) toolDefinitions() []map[string]any {
-	return []map[string]any{
+	tools := []map[string]any{
 		{
 			"name":        "server.health",
 			"description": "Returns server status and enabled providers.",
@@ -303,6 +305,92 @@ func (s *Server) toolDefinitions() []map[string]any {
 			"inputSchema": browserTaskInputSchema(),
 		},
 	}
+
+	if s.cfg.FileTools.Enabled {
+		tools = append(tools,
+			map[string]any{
+				"name":        "file.sandbox",
+				"description": "Returns file tool sandbox configuration.",
+				"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
+			},
+			map[string]any{
+				"name":        "file.list",
+				"description": "Lists files/directories within configured sandbox dirs.",
+				"inputSchema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{"type": "string"},
+						"recursive": map[string]any{"type": "boolean"},
+						"max_entries": map[string]any{"type": "integer"},
+					},
+				},
+			},
+			map[string]any{
+				"name":        "file.read",
+				"description": "Reads a file from configured sandbox dirs.",
+				"inputSchema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{"type": "string"},
+						"max_bytes": map[string]any{"type": "integer"},
+					},
+					"required": []string{"path"},
+				},
+			},
+			map[string]any{
+				"name":        "file.write",
+				"description": "Writes or appends file content within configured sandbox dirs.",
+				"inputSchema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{"type": "string"},
+						"content": map[string]any{"type": "string"},
+						"append": map[string]any{"type": "boolean"},
+						"create_dirs": map[string]any{"type": "boolean"},
+					},
+					"required": []string{"path", "content"},
+				},
+			},
+			map[string]any{
+				"name":        "file.mkdir",
+				"description": "Creates directories within configured sandbox dirs.",
+				"inputSchema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{"type": "string"},
+						"recursive": map[string]any{"type": "boolean"},
+					},
+					"required": []string{"path"},
+				},
+			},
+			map[string]any{
+				"name":        "file.move",
+				"description": "Moves or renames files/directories within configured sandbox dirs.",
+				"inputSchema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"from": map[string]any{"type": "string"},
+						"to": map[string]any{"type": "string"},
+					},
+					"required": []string{"from", "to"},
+				},
+			},
+			map[string]any{
+				"name":        "file.delete",
+				"description": "Deletes files or directories within configured sandbox dirs.",
+				"inputSchema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{"type": "string"},
+						"recursive": map[string]any{"type": "boolean"},
+					},
+					"required": []string{"path"},
+				},
+			},
+		)
+	}
+
+	return tools
 }
 
 func browserTaskInputSchema() map[string]any {

@@ -1,6 +1,17 @@
 export const name = "json-edit";
 
-const SUPPORTED_TYPES = new Set(["replace_text", "insert_line", "delete_line", "append_text", "noop"]);
+const SUPPORTED_TYPES = new Set([
+  "replace_text",
+  "insert_line",
+  "delete_line",
+  "append_text",
+  "create_directory",
+  "create_file",
+  "delete_file",
+  "move_file",
+  "list_directory",
+  "noop"
+]);
 
 export function parsePrompt(prompt) {
   const raw = String(prompt || "").trim();
@@ -47,9 +58,6 @@ function normalizeAction(payload) {
   }
 
   const filePath = String(payload.filePath || "").trim();
-  if (!filePath) {
-    return { success: false, error: "filePath is required." };
-  }
 
   if (type === "replace_text") {
     return {
@@ -71,6 +79,78 @@ function normalizeAction(payload) {
         filePath,
         line: Number(payload.line),
         text: String(payload.text || "")
+      }
+    };
+  }
+
+  if (type === "create_directory") {
+    const dirPath = String(payload.dirPath || payload.filePath || "").trim();
+    if (!dirPath) {
+      return { success: false, error: "create_directory requires dirPath." };
+    }
+
+    return {
+      success: true,
+      value: {
+        type,
+        dirPath
+      }
+    };
+  }
+
+  if (type === "list_directory") {
+    const dirPath = String(payload.dirPath || payload.filePath || "").trim();
+    if (!dirPath) {
+      return { success: false, error: "list_directory requires dirPath." };
+    }
+
+    return {
+      success: true,
+      value: {
+        type,
+        dirPath
+      }
+    };
+  }
+
+  if (!filePath) {
+    return { success: false, error: "filePath is required." };
+  }
+
+  if (type === "create_file") {
+    return {
+      success: true,
+      value: {
+        type,
+        filePath,
+        content: String(payload.content || payload.text || ""),
+        overwrite: Boolean(payload.overwrite)
+      }
+    };
+  }
+
+  if (type === "delete_file") {
+    return {
+      success: true,
+      value: {
+        type,
+        filePath
+      }
+    };
+  }
+
+  if (type === "move_file") {
+    const destinationPath = String(payload.destinationPath || payload.to || "").trim();
+    if (!destinationPath) {
+      return { success: false, error: "move_file requires destinationPath." };
+    }
+
+    return {
+      success: true,
+      value: {
+        type,
+        filePath,
+        destinationPath
       }
     };
   }

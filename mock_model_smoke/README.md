@@ -28,6 +28,7 @@ npm run mock:simulate
 npm run mock:run -- --prompt "replace text \"Hello PDF World\" with \"Hello A\" in ${TARGET_FILE}" --target-file mock_model_smoke/fixtures/sample.ts
 npm run mock:simulate:pdf
 npm run mock:simulate:mcp
+npm run mock:file-worker:smoke
 npm run mock:evaluate
 npm run mock:evaluate:stress
 npm run mock:evaluate:stress:constrained
@@ -64,6 +65,10 @@ The loader auto-discovers parser files, so adding or removing a parser only requ
 Built-in parsers:
 - `generic-ts-edit`: natural-language style edit prompts.
 - `json-edit`: JSON object prompts, for example `{"type":"replace_text", ...}`.
+
+`json-edit` supports action types:
+- `replace_text`, `insert_line`, `delete_line`, `append_text`
+- `create_directory`, `create_file`, `delete_file`, `move_file`, `list_directory`
 
 ## Project Scenarios
 

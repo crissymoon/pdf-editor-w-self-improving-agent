@@ -13,6 +13,13 @@ This folder contains a lightweight cross-platform MCP server designed for reposi
   - `ai.chat`
   - `browser.playwright`
   - `browser.puppeteer`
+  - `file.sandbox`
+  - `file.list`
+  - `file.read`
+  - `file.write`
+  - `file.mkdir`
+  - `file.move`
+  - `file.delete`
 - Smoke tests and protocol tests.
 
 ## Configuration
@@ -46,11 +53,32 @@ Included file:
 
 - `mcp/settings.json`
 
+File tooling sandbox options in `settings.json`:
+
+- `file_tools.enabled` enables/disables file tools.
+- `file_tools.sandbox_dirs` is a list of allowed directories.
+- `file_tools.max_read_bytes` and `file_tools.max_write_bytes` cap payload sizes.
+
+Relative sandbox paths are resolved from the directory that contains `settings.json`.
+
 This file is configured for OpenAI testing with:
 
 - conversation and prompting model: `gpt-4o-mini`
 - heavy or tool workload model: `gpt-4o`
 - Desktop key file path: `~/Desktop/keys/openai.key`
+
+Example file-tools section:
+
+```json
+{
+  "file_tools": {
+    "enabled": true,
+    "sandbox_dirs": ["../file_worker_smoke"],
+    "max_read_bytes": 262144,
+    "max_write_bytes": 262144
+  }
+}
+```
 
 If `OPENAI_API_KEY` is set in environment, it takes priority over key_file.
 
@@ -183,9 +211,12 @@ Use one of the following snippets and replace paths and API keys.
 
 ```bash
 go test ./...
+npm run mcp:smoke:file-tools
 ```
 
 The smoke suite validates initialize, tool listing, health tool call, and settings-file loading.
+
+`mcp:smoke:file-tools` validates end-to-end JSON-RPC execution for file tooling (`file.sandbox`, `file.list`, `file.mkdir`, `file.write`, `file.read`, `file.move`, `file.delete`) within configured sandbox directories.
 
 ## Live MCP Integration Smoke (OpenAI)
 

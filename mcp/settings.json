@@ -1,5 +1,14 @@
 {
   "default_provider": "openai",
+  "file_tools": {
+    "enabled": true,
+    "sandbox_dirs": [
+      "../file_worker_smoke",
+      "../mock_model_smoke/output/eval-workspace"
+    ],
+    "max_read_bytes": 262144,
+    "max_write_bytes": 262144
+  },
   "openai": {
     "base_url": "https://api.openai.com",
     "key_file": "~/Desktop/keys/openai.key",
