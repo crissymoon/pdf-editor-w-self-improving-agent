@@ -1,0 +1,3 @@
+- MCP server work remains focused on stable tool invocation and provider interoperability.
+- Ongoing effort targets lower friction between file tools, browser tools, and agent-driven workflows.
+- 2026 focus is stronger task bridging so MCP actions chain cleanly into user-facing outcomes.

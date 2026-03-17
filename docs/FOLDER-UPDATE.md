@@ -1,0 +1,3 @@
+- Core documentation covers project setup, quick reference, and participant guidance.
+- Focus remains on accessibility and clarity for community learning and self-hosting.
+- Planned work is tighter integration of agent runtime workflows into getting-started materials.

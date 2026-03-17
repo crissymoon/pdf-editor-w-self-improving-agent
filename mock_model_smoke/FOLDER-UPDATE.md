@@ -1,0 +1,3 @@
+- Mock AI model and simulation tools are essential for testing agent workflows without live API dependencies.
+- Current emphasis is stress testing and scenario fidelity for realistic agentic task traces.
+- 2026 goal is stronger fixture generation and offline-first testing for PDF and MCP workflows.

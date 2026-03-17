@@ -1,0 +1,3 @@
+- Mobile app remains aligned with the core editor workflows while preserving Flutter portability.
+- Current direction is tighter parity with desktop PDF fill-and-sign behavior.
+- Planned updates prioritize reliability of signatures, forms, and cross-platform testing loops.

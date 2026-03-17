@@ -1,0 +1,3 @@
+- CLI workflows continue to support repeatable local automation for editor and tooling operations.
+- Current emphasis is better command discoverability and smoother integration with agent routines.
+- Next passes will expand task orchestration hooks for recurring check-ins and build handoffs.

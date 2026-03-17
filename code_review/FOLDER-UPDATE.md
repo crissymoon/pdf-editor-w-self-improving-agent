@@ -1,0 +1,3 @@
+- Review pipeline is active with strict and advisory profiles.
+- Latest snapshots continue tracking medium-severity findings for prioritized cleanup.
+- Check-in workflows are now wired to make progress drift visible during iterative development.

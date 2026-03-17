@@ -1,6 +1,6 @@
 # XCM-PDF Editor
 
-Was a basic PDF Tool from last year but 'am adding an AI Agent...
+This project started as a basic PDF tool and is now an active 2026 experiment in bridging practical PDF workflows with AI agentic automation.
 
 A full-featured PDF Editor with crypto digital signing capabilities.
 
@@ -20,11 +20,12 @@ A full-featured PDF Editor with crypto digital signing capabilities.
 
 ## Project Mission
 
-This project is a free community-focused tool for Leto's Angels.
+This project is a free community-focused tool for Leto's Angels and a public build platform for ongoing agent tooling.
 
 - Help individuals complete fill-and-sign workflows when paid tools are not accessible
 - Keep signing and verification local to the client by default
 - Make self-hosting straightforward so participants can learn deployment basics
+- Expand agentic task execution and bridge PDF workflows with automated toolchains as an essential 2026 direction
 
 ## Multi-User Server Readiness
 
@@ -203,6 +204,18 @@ npm run review:performance
 
 # Promote dbl agent over main agent
 npm run agent:promote
+
+# Check agent/runtime progress snapshot
+npm run agent:status
+
+# Run review + progress check-in loop
+npm run agent:checkin
+
+# Generate README folder updates from mapped folder update files
+npm run agent:readme:generate
+
+# Strict check-in gate (fails on high findings)
+npm run agent:checkin:strict
 ```
 
 ## Documentation
@@ -245,7 +258,76 @@ The editor now includes a double-agent runtime with an in-app Agent Panel.
 
 - Source architecture: `src/agent/`
 - Promotion command: `npm run agent:promote`
+- Progress snapshot command: `npm run agent:status`
+- Check-in command for recurring progress reviews: `npm run agent:checkin`
 - Runtime browser API: `window.xcmPdfAgents`
+
+Use the check-in workflow regularly to track build readiness, review severity drift, and keep this tool easy to build on over time.
+
+## Folder Update Map
+
+Mapped per-folder update files can be used to regenerate this README section as work progresses.
+
+- Map file: `scripts/agent/readme-folder-updates-map.json`
+- Generator command: `npm run agent:readme:generate`
+
+<!-- FOLDER_UPDATES:START -->
+### Frontend and Editor Runtime
+- Folder: src
+- Update source: src/FOLDER-UPDATE.md
+- Login gate UX was streamlined for compact username/password input handling.
+- Password visibility now uses inline eye icons that visually blend into the input field.
+- Autofill styling is normalized to prevent browser-specific yellow/blue background flashes.
+
+### MCP Service and Tool Bridge
+- Folder: mcp
+- Update source: mcp/FOLDER-UPDATE.md
+- MCP server work remains focused on stable tool invocation and provider interoperability.
+- Ongoing effort targets lower friction between file tools, browser tools, and agent-driven workflows.
+- 2026 focus is stronger task bridging so MCP actions chain cleanly into user-facing outcomes.
+
+### Mobile Client
+- Folder: mobile
+- Update source: mobile/FOLDER-UPDATE.md
+- Mobile app remains aligned with the core editor workflows while preserving Flutter portability.
+- Current direction is tighter parity with desktop PDF fill-and-sign behavior.
+- Planned updates prioritize reliability of signatures, forms, and cross-platform testing loops.
+
+### Review and Quality Automation
+- Folder: code_review
+- Update source: code_review/FOLDER-UPDATE.md
+- Review pipeline is active with strict and advisory profiles.
+- Latest snapshots continue tracking medium-severity findings for prioritized cleanup.
+- Check-in workflows are now wired to make progress drift visible during iterative development.
+
+### CLI and Workflow Automation
+- Folder: xcm_cli
+- Update source: xcm_cli/FOLDER-UPDATE.md
+- CLI workflows continue to support repeatable local automation for editor and tooling operations.
+- Current emphasis is better command discoverability and smoother integration with agent routines.
+- Next passes will expand task orchestration hooks for recurring check-ins and build handoffs.
+
+### Project Documentation
+- Folder: docs
+- Update source: docs/FOLDER-UPDATE.md
+- Core documentation covers project setup, quick reference, and participant guidance.
+- Focus remains on accessibility and clarity for community learning and self-hosting.
+- Planned work is tighter integration of agent runtime workflows into getting-started materials.
+
+### AI Model Mock and Simulation
+- Folder: mock_model_smoke
+- Update source: mock_model_smoke/FOLDER-UPDATE.md
+- Mock AI model and simulation tools are essential for testing agent workflows without live API dependencies.
+- Current emphasis is stress testing and scenario fidelity for realistic agentic task traces.
+- 2026 goal is stronger fixture generation and offline-first testing for PDF and MCP workflows.
+
+### PDF Testing and Generation
+- Folder: pdf_tests
+- Update source: pdf_tests/FOLDER-UPDATE.md
+- PDF generation utilities support both static example documents and randomized test fixtures.
+- Recent work focuses on robust PDF structure generation for form-filling and signing validation.
+- Ongoing effort expands test coverage for complex multi-page workflows and edge cases.
+<!-- FOLDER_UPDATES:END -->
 
 ## Development
 

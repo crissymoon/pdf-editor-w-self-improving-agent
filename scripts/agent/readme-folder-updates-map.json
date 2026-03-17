@@ -1,0 +1,47 @@
+{
+  "readmePath": "README.md",
+  "startMarker": "<!-- FOLDER_UPDATES:START -->",
+  "endMarker": "<!-- FOLDER_UPDATES:END -->",
+  "entries": [
+    {
+      "folder": "src",
+      "title": "Frontend and Editor Runtime",
+      "updateFile": "src/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "mcp",
+      "title": "MCP Service and Tool Bridge",
+      "updateFile": "mcp/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "mobile",
+      "title": "Mobile Client",
+      "updateFile": "mobile/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "code_review",
+      "title": "Review and Quality Automation",
+      "updateFile": "code_review/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "xcm_cli",
+      "title": "CLI and Workflow Automation",
+      "updateFile": "xcm_cli/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "docs",
+      "title": "Project Documentation",
+      "updateFile": "docs/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "mock_model_smoke",
+      "title": "AI Model Mock and Simulation",
+      "updateFile": "mock_model_smoke/FOLDER-UPDATE.md"
+    },
+    {
+      "folder": "pdf_tests",
+      "title": "PDF Testing and Generation",
+      "updateFile": "pdf_tests/FOLDER-UPDATE.md"
+    }
+  ]
+}

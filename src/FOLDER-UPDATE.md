@@ -1,0 +1,3 @@
+- Login gate UX was streamlined for compact username/password input handling.
+- Password visibility now uses inline eye icons that visually blend into the input field.
+- Autofill styling is normalized to prevent browser-specific yellow/blue background flashes.
