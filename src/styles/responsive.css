@@ -84,14 +84,21 @@
   /* Landscape styles */
 }
 
-/* Touch device - larger tap targets */
-.has-touch button,
+/* Touch device - larger tap targets; toolbar buttons keep their compact padding */
+.has-touch button:not(.btn-icon):not(.btn-toolbar),
 .has-touch a,
 .has-touch input[type='button'],
 .has-touch input[type='submit'] {
   min-height: 44px; /* iOS minimum tap target */
   min-width: 44px;
   padding: 0.75rem 1rem;
+}
+
+/* Icon buttons and toolbar buttons: meet 44px tap target via min-size only */
+.has-touch .btn-icon,
+.has-touch .btn-toolbar {
+  min-height: 36px;
+  min-width: 36px;
 }
 
 .has-touch {

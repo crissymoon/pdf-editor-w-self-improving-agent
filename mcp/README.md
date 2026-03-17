@@ -11,6 +11,8 @@ This folder contains a lightweight cross-platform MCP server designed for reposi
   - `server.health`
   - `ai.models`
   - `ai.chat`
+  - `browser.playwright`
+  - `browser.puppeteer`
 - Smoke tests and protocol tests.
 
 ## Configuration
@@ -215,3 +217,52 @@ Credential resolution for this live smoke:
 - `mcp/settings.json` `openai.key_file` (default `~/Desktop/keys/openai.key`)
 
 If no key is available, the live smoke script reports `[SKIP]` and exits successfully.
+
+## Browser Automation Tooling For Custom Agent Tasks
+
+The MCP server can run browser automation tasks using either Playwright or Puppeteer.
+
+Available MCP tools:
+
+- `browser.playwright`
+- `browser.puppeteer`
+
+Both tools accept task arguments such as:
+
+- `url` (required)
+- `headless` (optional, default `true`)
+- `timeout_ms` (optional)
+- `wait_until` (`load`, `domcontentloaded`, `networkidle`)
+- `output_path` (optional screenshot destination)
+- `actions` (optional ordered array):
+  - `wait_for_selector`
+  - `click`
+  - `type`
+  - `extract_text`
+  - `wait_for_timeout`
+  - `screenshot`
+
+Setup from repository root:
+
+```bash
+npm run mcp:browser:install
+npm run mcp:browser:install:browsers
+```
+
+Smoke checks:
+
+```bash
+npm run mcp:browser:smoke:playwright
+npm run mcp:browser:smoke:puppeteer
+npm run mcp:smoke:browser:mcp
+```
+
+`mcp:smoke:browser:mcp` validates end-to-end MCP JSON-RPC flow for browser tools by calling `browser.puppeteer` through `tools/call`.
+
+By default the MCP server executes:
+
+- `node browser_tools/src/index.mjs --engine <playwright|puppeteer>`
+
+You can override runner location using environment variable:
+
+- `MCP_BROWSER_TOOL_RUNNER`

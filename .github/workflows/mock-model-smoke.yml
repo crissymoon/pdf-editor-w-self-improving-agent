@@ -1,0 +1,47 @@
+name: mock-model-smoke
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  mock-smoke-and-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: run strict mock smoke and stress gate
+        run: npm run mock:evaluate:ci
+
+      - name: upload mock smoke reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mock-model-smoke-reports
+          retention-days: 14
+          path: mock_model_smoke/output/*.json
+          if-no-files-found: warn
+
+      - name: upload mock transformed fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mock-model-smoke-fixtures
+          retention-days: 7
+          path: mock_model_smoke/output/eval-workspace/*.ts
+          if-no-files-found: warn

@@ -1,0 +1,12 @@
+{
+  "constrained": {
+    "expectationMatchRateMin": 1,
+    "latencyP95Max": 4000,
+    "waitP95Max": 3500
+  },
+  "high-throughput": {
+    "expectationMatchRateMin": 1,
+    "latencyP95Max": 500,
+    "waitP95Max": 80
+  }
+}

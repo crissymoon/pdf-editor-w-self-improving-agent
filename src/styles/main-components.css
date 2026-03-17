@@ -153,10 +153,24 @@
   font-size: 14px;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--color-gray-800);
+  text-align: left;
 }
 
 .context-menu-item:hover {
   background: var(--glass-bg);
+}
+
+.context-menu-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.context-menu-item.is-disabled:hover {
+  background: transparent;
 }
 
 .context-menu-divider {

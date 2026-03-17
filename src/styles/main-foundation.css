@@ -84,41 +84,111 @@ html, body {
   background: transparent;
 }
 
-/* Header */
-.header {
+/* Top Bar (merged header + toolbar) */
+.topbar {
   background: linear-gradient(135deg, var(--color-purple-dark) 0%, var(--color-purple) 100%);
   color: var(--color-white);
-  padding: 12px 24px;
+  padding: 8px 10px;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   box-shadow: var(--shadow-header);
   border-bottom: var(--glass-border-subtle);
   z-index: 100;
 }
 
-.header-brand {
+.topbar-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.header-logo {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-}
-
-.header-subtitle {
-  font-size: 11px;
-  opacity: 0.88;
-  max-width: 200px;
-  line-height: 1.3;
-}
-
-.header-actions {
-  display: flex;
   gap: 8px;
+  margin-right: 0;
+  flex-shrink: 0;
+}
+
+.topbar-logo {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+.topbar-main-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 0;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.topbar-overflow-toggle {
+  display: inline-flex;
+}
+
+.topbar-overflow-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  min-width: 200px;
+  border-radius: var(--radius);
+  border: var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-glass-hover);
+  overflow: hidden;
+  z-index: 5000;
+}
+
+.topbar-overflow-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--color-gray-800);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.topbar-overflow-item:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.topbar-overflow-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.topbar-overflow-item.is-disabled:hover {
+  background: transparent;
+}
+
+.toolbar-inline {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: 0;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  scrollbar-width: thin;
+}
+
+.toolbar-inline .toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.topbar-menu-group {
+  position: relative;
 }
 
 /* Buttons */
@@ -200,6 +270,31 @@ html, body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  position: relative;
+}
+
+/* Canvas container — must fill the remaining width next to the sidebar */
+.canvas-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Canvas wrapper — the scrollable viewport for the PDF canvas */
+.canvas-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  background-color: #eef2ff;
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.10) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* Sidebar */
@@ -214,6 +309,20 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  transition: width 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.main-container.sidebar-hidden .sidebar {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  border-right: none;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 .sidebar-header {
@@ -283,9 +392,83 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   position: relative;
   z-index: 10;
+}
+
+/* Compact toolbar: hide secondary tool groups when space is tight */
+@media (max-width: 900px) {
+  .hide-mobile-tight {
+    display: none;
+  }
+
+  .toolbar-inline {
+    padding: 4px 6px;
+    gap: 6px;
+  }
+
+  .toolbar-inline .toolbar-group {
+    gap: 4px;
+  }
+
+  .toolbar-inline .btn-toolbar {
+    padding: 6px 8px;
+  }
+
+  .toolbar-inline .page-input {
+    width: 44px;
+  }
+}
+
+/* Mobile layout: overlay sidebar + overflow menu (≤ 768px) */
+@media (max-width: 768px) {
+  .topbar {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  /* Sidebar becomes an overlay drawer — keep its natural width so
+     translateX(-104%) actually moves it off-screen (percentage of own width) */
+  .main-container .sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 78vw);
+    max-width: 320px;
+    z-index: 1250;
+    transform: translateX(-104%);
+    opacity: 0;
+  }
+
+  /* When sidebar-hidden is active on mobile, preserve the sidebar width
+     so the CSS transform percentage resolves correctly */
+  .main-container.sidebar-hidden .sidebar {
+    width: min(300px, 78vw);
+    min-width: unset;
+    overflow: visible;
+    transform: translateX(-104%);
+    opacity: 0;
+  }
+
+  .main-container.mobile-sidebar-open .sidebar {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .main-container.mobile-sidebar-open .sidebar-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+    z-index: 1200;
+  }
+
+  /* Reduce canvas wrapper padding on small screens */
+  .canvas-wrapper {
+    padding-bottom: 24px; /* extra room for bottom nav bars */
+  }
 }
 
 .pdf-canvas-container {
@@ -294,6 +477,8 @@ html, body {
   box-shadow: var(--shadow-glass-hover);
   border-radius: var(--radius-sm);
   overflow: hidden;
+  margin: 16px auto;
+  align-self: center;
 }
 
 .pdf-canvas {
@@ -552,21 +737,21 @@ html, body {
 }
 
 .empty-state-icon {
-  width: 120px;
-  height: 120px;
-  background: linear-gradient(135deg, var(--color-purple-light) 0%, var(--color-light-blue-light) 100%);
-  border-radius: var(--radius-lg);
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow-glass);
+  margin-bottom: 16px;
 }
 
-.empty-state-icon svg {
+.empty-state-icon > svg {
   width: 64px;
   height: 64px;
   color: var(--color-white);
+}
+
+.empty-state-icon .btn svg {
+  color: currentColor;
 }
 
 .empty-state-title {

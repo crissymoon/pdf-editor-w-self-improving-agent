@@ -1,0 +1,10 @@
+{
+  "parser": "generic-ts-edit",
+  "requestsPerSecond": 8,
+  "burst": 16,
+  "workerCount": 4,
+  "maxQueue": 200,
+  "dryRun": true,
+  "rootDir": ".",
+  "outputDir": "mock_model_smoke/output"
+}

@@ -77,10 +77,12 @@ class AgentPanel {
       <div class="agent-panel-body">
         <div class="agent-mode-bar">
           <span class="agent-mode-label">Mode</span>
-          <select class="agent-mode-select" id="agent-select">
-            <option value="main">main</option>
-            <option value="dbl">dbl</option>
-          </select>
+          <div class="agent-mode-select-wrap">
+            <select class="agent-mode-select" id="agent-select">
+              <option value="main">main</option>
+              <option value="dbl">dbl</option>
+            </select>
+          </div>
           <span class="agent-stats" id="agent-stats"></span>
         </div>
         <div class="agent-chat" id="agent-chat"></div>

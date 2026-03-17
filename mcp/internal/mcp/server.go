@@ -2,10 +2,14 @@ package mcp
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -202,6 +206,28 @@ func (s *Server) handleToolCall(ctx context.Context, rawParams json.RawMessage) 
 				"model":    response.Model,
 			},
 		}, 0, nil
+	case "browser.playwright":
+		result, err := s.runBrowserTask(ctx, "playwright", params.Arguments)
+		if err != nil {
+			return nil, -32001, err
+		}
+		return map[string]any{
+			"content": []map[string]string{{
+				"type": "text",
+				"text": result,
+			}},
+		}, 0, nil
+	case "browser.puppeteer":
+		result, err := s.runBrowserTask(ctx, "puppeteer", params.Arguments)
+		if err != nil {
+			return nil, -32001, err
+		}
+		return map[string]any{
+			"content": []map[string]string{{
+				"type": "text",
+				"text": result,
+			}},
+		}, 0, nil
 	default:
 		return nil, -32601, fmt.Errorf("tool not found: %s", params.Name)
 	}
@@ -266,6 +292,45 @@ func (s *Server) toolDefinitions() []map[string]any {
 				},
 			},
 		},
+		{
+			"name":        "browser.playwright",
+			"description": "Runs browser automation tasks using Playwright for MCP custom agent workflows.",
+			"inputSchema": browserTaskInputSchema(),
+		},
+		{
+			"name":        "browser.puppeteer",
+			"description": "Runs browser automation tasks using Puppeteer for MCP custom agent workflows.",
+			"inputSchema": browserTaskInputSchema(),
+		},
+	}
+}
+
+func browserTaskInputSchema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"url":         map[string]any{"type": "string"},
+			"headless":    map[string]any{"type": "boolean"},
+			"timeout_ms":  map[string]any{"type": "integer"},
+			"wait_until":  map[string]any{"type": "string", "enum": []string{"load", "domcontentloaded", "networkidle"}},
+			"output_path": map[string]any{"type": "string"},
+			"actions": map[string]any{
+				"type": "array",
+				"items": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"type":      map[string]any{"type": "string"},
+						"selector":  map[string]any{"type": "string"},
+						"text":      map[string]any{"type": "string"},
+						"as":        map[string]any{"type": "string"},
+						"ms":        map[string]any{"type": "integer"},
+						"path":      map[string]any{"type": "string"},
+						"full_page": map[string]any{"type": "boolean"},
+					},
+				},
+			},
+		},
+		"required": []string{"url"},
 	}
 }
 
@@ -396,6 +461,73 @@ func (s *Server) defaultModelForWorkload(provider string, workload string) strin
 	}
 
 	return ""
+}
+
+func (s *Server) runBrowserTask(ctx context.Context, engine string, arguments map[string]any) (string, error) {
+	runner, err := resolveBrowserRunnerPath()
+	if err != nil {
+		return "", err
+	}
+
+	payload, err := json.Marshal(arguments)
+	if err != nil {
+		return "", fmt.Errorf("browser task marshal failed: %w", err)
+	}
+
+	cmd := exec.CommandContext(ctx, "node", runner, "--engine", engine)
+	cmd.Stdin = bytes.NewReader(payload)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		message := strings.TrimSpace(stderr.String())
+		if message == "" {
+			message = strings.TrimSpace(stdout.String())
+		}
+		if message == "" {
+			message = err.Error()
+		}
+		return "", fmt.Errorf("browser %s tool failed: %s", engine, message)
+	}
+
+	result := strings.TrimSpace(stdout.String())
+	if result == "" {
+		return "", fmt.Errorf("browser %s tool returned empty output", engine)
+	}
+
+	return result, nil
+}
+
+func resolveBrowserRunnerPath() (string, error) {
+	envRunner := strings.TrimSpace(os.Getenv("MCP_BROWSER_TOOL_RUNNER"))
+	if envRunner != "" {
+		return envRunner, nil
+	}
+
+	candidates := []string{
+		filepath.FromSlash("browser_tools/src/index.mjs"),
+		filepath.FromSlash("mcp/browser_tools/src/index.mjs"),
+	}
+
+	exePath, err := os.Executable()
+	if err == nil {
+		exeDir := filepath.Dir(exePath)
+		candidates = append(candidates,
+			filepath.Join(exeDir, "..", "browser_tools", "src", "index.mjs"),
+			filepath.Join(exeDir, "..", "..", "browser_tools", "src", "index.mjs"),
+		)
+	}
+
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+
+	return "", fmt.Errorf("browser tooling runner not found; set MCP_BROWSER_TOOL_RUNNER or ensure browser_tools/src/index.mjs exists")
 }
 
 func TimeoutForTests() time.Duration {

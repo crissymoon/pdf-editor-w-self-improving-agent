@@ -1,0 +1,36 @@
+{
+  "name": "default-mock-nlp-scenario",
+  "description": "Dry-run prompts that mimic frontend requests for surgical TypeScript edits.",
+  "requests": [
+    {
+      "id": "req-1",
+      "prompt": "replace text \"Hello PDF World\" with \"Hello Mock Runner\" in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "req-2",
+      "prompt": "insert \"export const smokeMarker = true;\" at line 1 in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "req-3",
+      "prompt": "append \"\\nexport const auditTrail = [];\" to ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "req-4",
+      "prompt": "delete line 2 in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "req-5",
+      "prompt": "replace text \"featureFlagEnabled\" with \"isFeatureFlagEnabled\" in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "req-6",
+      "prompt": "replace text \"does-not-exist\" with \"new-value\" in ${TARGET_FILE}",
+      "expectSuccess": false
+    }
+  ]
+}

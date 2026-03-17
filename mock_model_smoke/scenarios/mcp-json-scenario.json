@@ -1,0 +1,26 @@
+{
+  "name": "mcp-json-parser-scenario",
+  "description": "JSON-style prompt simulation for MCP integration request handling.",
+  "requests": [
+    {
+      "id": "mcp-1",
+      "prompt": "{\"type\":\"replace_text\",\"filePath\":\"${TARGET_FILE}\",\"target\":\"\\\"unknown\\\"\",\"replacement\":\"\\\"ok\\\"\"}",
+      "expectSuccess": true
+    },
+    {
+      "id": "mcp-2",
+      "prompt": "{\"type\":\"insert_line\",\"filePath\":\"${TARGET_FILE}\",\"line\":1,\"text\":\"export const mcpSmokeMode = true;\"}",
+      "expectSuccess": true
+    },
+    {
+      "id": "mcp-3",
+      "prompt": "{\"type\":\"append_text\",\"filePath\":\"${TARGET_FILE}\",\"text\":\"\\nexport const mcpConcurrency = 4;\"}",
+      "expectSuccess": true
+    },
+    {
+      "id": "mcp-4",
+      "prompt": "{\"type\":\"delete_line\",\"filePath\":\"${TARGET_FILE}\",\"line\":500}",
+      "expectSuccess": false
+    }
+  ]
+}

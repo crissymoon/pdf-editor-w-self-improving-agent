@@ -1,0 +1,10 @@
+{
+  "parser": "json-edit",
+  "requestsPerSecond": 12,
+  "burst": 24,
+  "workerCount": 6,
+  "maxQueue": 400,
+  "dryRun": false,
+  "rootDir": ".",
+  "outputDir": "mock_model_smoke/output"
+}

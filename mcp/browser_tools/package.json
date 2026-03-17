@@ -1,0 +1,17 @@
+{
+  "name": "xcm-mcp-browser-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Puppeteer and Playwright browser tooling for XCM MCP custom agent tasks.",
+  "scripts": {
+    "run": "node src/index.mjs --engine playwright",
+    "smoke:playwright": "node src/smoke.mjs --engine playwright",
+    "smoke:puppeteer": "node src/smoke.mjs --engine puppeteer",
+    "install:browsers": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.54.2",
+    "puppeteer": "^24.17.1"
+  }
+}

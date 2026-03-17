@@ -7,6 +7,7 @@ interface SetupEditorEventListenersOptions {
   openFilePicker: () => void;
   openMergeModal: () => void;
   savePDF: () => void | Promise<void>;
+  toggleSidebarPanel: () => void;
   handleFileInput: (event: Event) => void;
   loadPDFFile: (file: File) => void | Promise<void>;
   setActiveTool: (tool: string | null) => void;
@@ -35,6 +36,125 @@ export function setupEditorEventListeners(options: SetupEditorEventListenersOpti
   document.getElementById('btn-open')?.addEventListener('click', () => options.openFilePicker());
   document.getElementById('btn-merge')?.addEventListener('click', () => options.openMergeModal());
   document.getElementById('btn-save')?.addEventListener('click', () => options.savePDF());
+  document.getElementById('btn-sidebar-toggle')?.addEventListener('click', () => options.toggleSidebarPanel());
+
+  const overflowToggle = document.getElementById('btn-overflow-menu');
+  const overflowMenu = document.getElementById('topbar-overflow-menu');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const contextMenu = document.getElementById('editor-context-menu');
+
+  const closeOverflowMenu = () => {
+    overflowMenu?.setAttribute('hidden', '');
+    if (overflowMenu) {
+      overflowMenu.style.left = '';
+      overflowMenu.style.top = '';
+    }
+    overflowToggle?.setAttribute('aria-expanded', 'false');
+  };
+
+  const isClickInsideOverflow = (target: EventTarget | null): boolean => {
+    const node = target as Node | null;
+    if (!node) {
+      return false;
+    }
+
+    return Boolean(overflowToggle?.contains(node) || overflowMenu?.contains(node));
+  };
+
+  const isActionDisabled = (action: string): boolean => {
+    if (action === 'delete') {
+      return document.getElementById('btn-delete')?.hasAttribute('disabled') ?? true;
+    }
+    if (action === 'undo') {
+      return document.getElementById('btn-undo')?.hasAttribute('disabled') ?? true;
+    }
+    if (action === 'redo') {
+      return document.getElementById('btn-redo')?.hasAttribute('disabled') ?? true;
+    }
+    if (action === 'save') {
+      return document.getElementById('btn-save')?.hasAttribute('disabled') ?? true;
+    }
+    return false;
+  };
+
+  const syncMenuState = (selector: string, attrName: string) => {
+    document.querySelectorAll<HTMLElement>(selector).forEach((item) => {
+      const action = item.dataset[attrName];
+      if (!action) return;
+
+      const disabled = isActionDisabled(action);
+      item.classList.toggle('is-disabled', disabled);
+      item.setAttribute('aria-disabled', String(disabled));
+    });
+  };
+
+  const executeQuickAction = (action: string) => {
+    if (isActionDisabled(action)) {
+      return;
+    }
+
+    if (action === 'new') options.createNewPDF();
+    if (action === 'open') options.openFilePicker();
+    if (action === 'merge') options.openMergeModal();
+    if (action === 'save') options.savePDF();
+    if (action === 'delete') options.deleteSelectedAnnotation();
+    if (action === 'undo') options.undo();
+    if (action === 'redo') options.redo();
+    if (action === 'toggle-sidebar') options.toggleSidebarPanel();
+  };
+
+  const openOverflowMenu = () => {
+    if (!overflowMenu || !overflowToggle) {
+      return;
+    }
+
+    syncMenuState('[data-overflow-action]', 'overflowAction');
+
+    const toggleRect = overflowToggle.getBoundingClientRect();
+    const preferredLeft = Math.max(8, toggleRect.left);
+    const menuWidth = 220;
+    const boundedLeft = Math.min(preferredLeft, window.innerWidth - menuWidth - 8);
+    const menuTop = Math.min(toggleRect.bottom + 6, window.innerHeight - 16);
+
+    overflowMenu.style.left = `${boundedLeft}px`;
+    overflowMenu.style.top = `${menuTop}px`;
+    overflowMenu.removeAttribute('hidden');
+    overflowToggle.setAttribute('aria-expanded', 'true');
+  };
+
+  overflowToggle?.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!overflowMenu || !overflowToggle) {
+      return;
+    }
+
+    const isOpen = !overflowMenu.hasAttribute('hidden');
+    if (isOpen) {
+      closeOverflowMenu();
+      return;
+    }
+
+    openOverflowMenu();
+  });
+
+  overflowToggle?.addEventListener('click', (event) => {
+    event.preventDefault();
+  });
+
+  overflowMenu?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const item = (event.target as HTMLElement).closest('[data-overflow-action]') as HTMLElement | null;
+    if (!item?.dataset.overflowAction) {
+      return;
+    }
+
+    const action = item.dataset.overflowAction;
+    executeQuickAction(action);
+    closeOverflowMenu();
+  });
+
+  sidebarBackdrop?.addEventListener('click', () => options.toggleSidebarPanel());
 
   document.getElementById('drop-zone')?.addEventListener('click', () => options.openFilePicker());
   document.getElementById('file-input')?.addEventListener('change', (event) => options.handleFileInput(event));
@@ -129,4 +249,55 @@ export function setupEditorEventListeners(options: SetupEditorEventListenersOpti
   annotationLayer?.addEventListener('pointerup', (event) => options.handleMouseUp(event));
   annotationLayer?.addEventListener('pointercancel', (event) => options.handleMouseUp(event));
   annotationLayer?.addEventListener('pointerleave', (event) => options.handleMouseUp(event));
+
+  const canvasWrapperEl = document.getElementById('canvas-wrapper');
+  canvasWrapperEl?.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    if (!contextMenu) {
+      return;
+    }
+
+    syncMenuState('[data-context-action]', 'contextAction');
+
+    const menuWidth = 200;
+    const menuHeight = 180;
+    const maxX = Math.max(8, window.innerWidth - menuWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - menuHeight - 8);
+    const x = Math.min(event.clientX, maxX);
+    const y = Math.min(event.clientY, maxY);
+
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+    contextMenu.removeAttribute('hidden');
+  });
+
+  contextMenu?.addEventListener('click', (event) => {
+    const item = (event.target as HTMLElement).closest('[data-context-action]') as HTMLElement | null;
+    if (!item?.dataset.contextAction) {
+      return;
+    }
+
+    const action = item.dataset.contextAction;
+    executeQuickAction(action);
+    contextMenu.setAttribute('hidden', '');
+  });
+
+  document.addEventListener('pointerdown', (event) => {
+    if (!isClickInsideOverflow(event.target)) {
+      closeOverflowMenu();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!(contextMenu?.contains(event.target as Node))) {
+      contextMenu?.setAttribute('hidden', '');
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeOverflowMenu();
+      contextMenu?.setAttribute('hidden', '');
+    }
+  });
 }

@@ -68,6 +68,7 @@ class PDFEditor {
   private history = new HistoryStack<Annotation[]>();
   private currentFilename = 'document.pdf';
   private autosaveTimer: number | null = null;
+  private isSidebarVisible = true;
 
   constructor() {
     this.init();
@@ -80,6 +81,7 @@ class PDFEditor {
     responsive.applyResponsiveClass(document.documentElement);
     
     this.render();
+    this.applyInitialResponsiveLayout();
     this.setupEventListeners();
     toast.init();
     this.setupAgentRuntime();
@@ -214,6 +216,7 @@ class PDFEditor {
       openFilePicker: () => this.openFilePicker(),
       openMergeModal: () => this.openMergeModal(),
       savePDF: () => this.savePDF(),
+      toggleSidebarPanel: () => this.toggleSidebarPanel(),
       handleFileInput: (event) => this.handleFileInput(event),
       loadPDFFile: (file) => this.loadPDFFile(file),
       setActiveTool: (tool) => this.setActiveTool(tool),
@@ -238,6 +241,51 @@ class PDFEditor {
       handleMouseMove: (event) => this.handleMouseMove(event),
       handleMouseUp: (event) => this.handleMouseUp(event),
     });
+  }
+
+  private applyInitialResponsiveLayout(): void {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      this.isSidebarVisible = false;
+      this.applySidebarState();
+    }
+  }
+
+  private toggleSidebarPanel(forceVisible?: boolean): void {
+    if (typeof forceVisible === 'boolean') {
+      this.isSidebarVisible = forceVisible;
+    } else {
+      this.isSidebarVisible = !this.isSidebarVisible;
+    }
+    this.applySidebarState();
+  }
+
+  private applySidebarState(): void {
+    const mainContainer = document.getElementById('main-container');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+    const toggleButton = document.getElementById('btn-sidebar-toggle');
+
+    if (!mainContainer) {
+      return;
+    }
+
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    mainContainer.classList.remove('sidebar-hidden', 'mobile-sidebar-open');
+
+    if (!this.isSidebarVisible) {
+      mainContainer.classList.add('sidebar-hidden');
+    }
+
+    if (isMobile && this.isSidebarVisible) {
+      mainContainer.classList.add('mobile-sidebar-open');
+    }
+
+    if (isMobile && this.isSidebarVisible) {
+      sidebarBackdrop?.removeAttribute('hidden');
+    } else {
+      sidebarBackdrop?.setAttribute('hidden', '');
+    }
+
+    toggleButton?.setAttribute('aria-pressed', String(this.isSidebarVisible));
   }
 
   private openFilePicker(): void {

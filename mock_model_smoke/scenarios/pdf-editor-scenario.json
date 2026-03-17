@@ -1,0 +1,31 @@
+{
+  "name": "pdf-editor-tooling-scenario",
+  "description": "Mimics frontend edit prompts for PDF editor workflow code.",
+  "requests": [
+    {
+      "id": "pdf-1",
+      "prompt": "replace text \"idle\" with \"ready\" in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "pdf-2",
+      "prompt": "insert \"export const smokePdfEditor = true;\" at line 1 in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "pdf-3",
+      "prompt": "replace text \"renderPage\" with \"renderPdfPage\" in ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "pdf-4",
+      "prompt": "append \"\\nexport const lastOperation = \\\"none\\\";\" to ${TARGET_FILE}",
+      "expectSuccess": true
+    },
+    {
+      "id": "pdf-5",
+      "prompt": "replace text \"not-present\" with \"new-value\" in ${TARGET_FILE}",
+      "expectSuccess": false
+    }
+  ]
+}
