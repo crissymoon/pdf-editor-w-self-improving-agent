@@ -1,6 +1,8 @@
+import { guardFile } from '../utils/file-guard';
 import { icons } from '../utils/icons';
 import { pdfService } from '../utils/pdf';
 import { toast } from '../utils/toast';
+import { setSanitizedHtml } from '../utils/safeHtml';
 import type { MergeItem } from '../types';
 
 export class MergeModal {
@@ -17,7 +19,7 @@ export class MergeModal {
   private createModal(): void {
     this.modal = document.createElement('div');
     this.modal.className = 'modal-overlay';
-    this.modal.innerHTML = `
+    setSanitizedHtml(this.modal, `
       <div class="modal">
         <div class="modal-header">
           <h3 class="modal-title">Merge PDFs</h3>
@@ -42,7 +44,7 @@ export class MergeModal {
           <button class="btn btn-primary" id="merge-confirm" disabled>Merge PDFs</button>
         </div>
       </div>
-    `;
+    `);
 
     document.body.appendChild(this.modal);
     this.setupEventListeners();
@@ -73,24 +75,30 @@ export class MergeModal {
       e.preventDefault();
       dropZone.classList.remove('dragover');
       const files = Array.from(e.dataTransfer?.files || []);
-      this.handleFiles(files);
+      void this.handleFiles(files);
     });
 
     fileInput.addEventListener('change', () => {
       const files = Array.from(fileInput.files || []);
-      this.handleFiles(files);
+      void this.handleFiles(files);
       fileInput.value = '';
     });
   }
 
-  private handleFiles(files: File[]): void {
-    const pdfFiles = files.filter(f => f.type === 'application/pdf');
+  private async handleFiles(files: File[]): Promise<void> {
+    for (const file of files) {
+      const guard = await guardFile(file);
 
-    if (pdfFiles.length !== files.length) {
-      toast.warning('Some files were skipped (only PDFs are accepted)');
-    }
+      for (const v of guard.violations) {
+        if (v.severity === 'block') {
+          toast.error(`${file.name} rejected: ${v.message}`);
+        } else {
+          toast.warning(`${file.name}: ${v.message}`);
+        }
+      }
 
-    for (const file of pdfFiles) {
+      if (!guard.ok) continue;
+
       const item: MergeItem = {
         id: crypto.randomUUID(),
         file,
@@ -113,7 +121,7 @@ export class MergeModal {
     }
 
     fileList.style.display = 'block';
-    fileList.innerHTML = this.files.map((item, index) => `
+    setSanitizedHtml(fileList, this.files.map((item, index) => `
       <div class="file-item" data-id="${item.id}">
         <div class="file-item-info">
           <span class="file-item-icon">${icons.file}</span>
@@ -131,7 +139,7 @@ export class MergeModal {
           </button>
         </div>
       </div>
-    `).join('');
+    `).join(''));
 
     fileList.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', (e) => {

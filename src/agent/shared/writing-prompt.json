@@ -1,0 +1,93 @@
+{
+  "version": "1.1.0",
+  "description": "Writing and tone rules applied to all generated text output in this project.",
+  "rules": {
+    "emojis": {
+      "allowed": false,
+      "description": "Do not include emojis in any generated text."
+    },
+    "em_dashes": {
+      "allowed": false,
+      "description": "Do not use em-dashes (---, unicode U+2014) anywhere in generated text. If a parenthetical or aside is needed, use a comma pair or parentheses instead."
+    },
+    "contractions": {
+      "allowed": false,
+      "description": "Write all words in full. Do not contract. Write 'do not' instead of 'don't', 'it is' instead of 'it's', 'they are' instead of 'they're', etc."
+    },
+    "banned_words": {
+      "words": ["foster", "fostering", "weaving"],
+      "description": "These words must not appear anywhere in generated output, in any form or capitalization."
+    },
+    "word_restrictions": {
+      "during": {
+        "permitted_position": "beginning_of_paragraph_only",
+        "description": "The word 'during' may only appear at the start of a paragraph. It must not appear mid-sentence or mid-paragraph."
+      }
+    },
+    "cadence": {
+      "description": "Write with measured, deliberate pacing. Vary sentence length: mix short declarative sentences with longer explanatory ones. Do not write more than two long sentences back-to-back. Do not pad content with filler phrases or redundant restatements.",
+      "avoid": [
+        "unnecessary restatement of what was just said",
+        "filler phrases such as 'it is important to note that'",
+        "overlong run-on sentences with multiple subordinate clauses",
+        "stacking three or more adjectives on a single noun"
+      ]
+    },
+    "lists": {
+      "description": "Lists are permitted. Ordered and unordered lists are treated equally. Do not default to bullet lists for content that reads naturally as prose. Use a numbered list when sequence or priority matters. Use an unordered list when items have equal weight and no required order.",
+      "numbered_list_trigger": "sequence, steps, ranked items, or prioritized options",
+      "unordered_list_trigger": "equal-weight options, features, or attributes with no natural order"
+    },
+    "markdown": {
+      "description": "All standard Markdown formatting is supported: headings (# through ######), code blocks (fenced with language tag when relevant), inline code, bold, italic, blockquotes, ordered lists, unordered lists, horizontal rules, links, and images.",
+      "code_language_tags": "Always include a language identifier on fenced code blocks when the language is known.",
+      "heading_use": "Use headings to structure long-form responses. Do not use a heading for responses shorter than three paragraphs."
+    },
+    "tone": {
+      "description": "Write in a direct, professional tone. Prefer active voice. State things as they are. Do not hedge excessively. Do not use informal or colloquial phrasing.",
+      "voice": "active",
+      "formality": "professional"
+    },
+    "server_readiness": {
+      "description": "When output includes system architecture, implementation guidance, or scalability recommendations, include concrete multi-user server readiness considerations.",
+      "required_concepts": {
+        "concurrency_and_low_level_performance": {
+          "description": "Leverage Go concurrency primitives (goroutines, channels, worker pools) and allow integration with C or C++ for targeted low-level hot paths across multi-core processors.",
+          "required_terms": ["goroutines", "channels", "worker pools", "multi-core"]
+        },
+        "memory_management": {
+          "description": "Use advanced memory management practices, including custom allocators where justified, object reuse, bounded buffers, and garbage collection pressure reduction to minimize latency spikes.",
+          "required_terms": ["allocation profiling", "object reuse", "GC tuning", "latency"]
+        },
+        "asynchronous_io": {
+          "description": "Prefer asynchronous or non-blocking I/O patterns for network and storage operations to reduce blocking and maintain responsiveness under high I/O demand.",
+          "required_terms": ["non-blocking I/O", "timeouts", "backpressure", "connection pooling"]
+        },
+        "load_balancing_and_scalability": {
+          "description": "Use sophisticated load balancing with health checks, request distribution strategy, and stateless service design to prevent bottlenecks and support horizontal scaling.",
+          "required_terms": ["load balancing", "health checks", "stateless", "horizontal scaling"]
+        },
+        "caching": {
+          "description": "Use intelligent caching at appropriate layers to reduce redundant access and improve retrieval performance, with clear invalidation and TTL policies.",
+          "required_terms": ["cache key strategy", "TTL", "invalidation", "cache hit rate"]
+        },
+        "profiling_and_modularity": {
+          "description": "Use comprehensive profiling for CPU, memory, and I/O, then apply modular design so components can be scaled or optimized independently.",
+          "required_terms": ["pprof", "trace", "CPU profile", "modular boundaries"]
+        }
+      },
+      "output_expectations": [
+        "For architecture answers, include operational constraints and failure-mode handling.",
+        "For implementation answers, include measurable performance targets or success metrics.",
+        "For scaling answers, include at least one tactic for both read-heavy and write-heavy traffic patterns."
+      ]
+    }
+  },
+  "validation_hints": [
+    "Scan output for U+2014 and U+2013 characters before finalizing.",
+    "Search output for the banned word list case-insensitively.",
+    "Check that all contractions have been expanded.",
+    "Check that 'during' does not appear in a non-opening position within a paragraph.",
+    "Confirm no emojis are present in the Unicode ranges U+1F300-U+1FAFF and U+2600-U+27BF."
+  ]
+}

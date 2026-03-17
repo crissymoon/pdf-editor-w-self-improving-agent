@@ -1,0 +1,18 @@
+{
+  "maxFileLines": 1000,
+  "complexityThreshold": 18,
+  "maxPythonLineLength": 100,
+  "failPolicy": {
+    "maxHigh": 0,
+    "maxMedium": 5,
+    "failOnSmoke": true
+  },
+  "ignore": {
+    "code-smells": [
+      {
+        "file": "generate-example-pdf.js",
+        "messageIncludes": "Debug logging detected."
+      }
+    ]
+  }
+}

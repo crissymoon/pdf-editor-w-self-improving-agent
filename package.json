@@ -1,13 +1,44 @@
 {
   "name": "xcm-pdf",
   "version": "1.0.0",
+  "main": "electron/main.cjs",
+  "bin": {
+    "xcm": "xcm_cli/xcm.mjs"
+  },
   "type": "module",
   "description": "XCM-PDF Editor - Developed for Leto's Angels Educational Project by XcaliburMoon Web Development",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate-example": "node generate-example-pdf.js"
+    "generate-example": "node generate-example-pdf.js",
+    "review": "node code_review/scripts/run-all.mjs",
+    "review:strict": "node code_review/scripts/run-all.mjs",
+    "review:advisory": "cross-env REVIEW_PROFILE=advisory node code_review/scripts/run-all.mjs",
+    "review:smoke": "node code_review/scripts/smoke-test.mjs",
+    "review:smells": "node code_review/scripts/check-code-smells.mjs",
+    "review:security": "node code_review/scripts/check-security.mjs",
+    "review:lines": "node code_review/scripts/check-file-lines.mjs",
+    "review:go": "node code_review/scripts/check-go-funcs.mjs",
+    "review:pdo-pep": "node code_review/scripts/check-pdo-pep-templating.mjs",
+    "review:complexity": "node code_review/scripts/check-complexity.mjs",
+    "review:performance": "node code_review/scripts/check-performance-memory.mjs",
+    "review:server": "node code_review/scripts/check-server-readiness.mjs",
+    "agent:promote": "node scripts/agent/promote-dbl-to-main.mjs",
+    "xcm": "node xcm_cli/xcm.mjs",
+    "xcm:help": "node xcm_cli/xcm.mjs help",
+    "dev:electron": "concurrently -k \"vite --port 5173 --strictPort\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "electron": "electron .",
+    "pack": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder",
+    "pack:win": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis",
+    "pack:mac": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg",
+    "pack:linux": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --linux AppImage",
+    "docker:test:linux": "docker compose -f docker/docker-compose.electron.yml --profile linux run --rm electron-linux",
+    "docker:test:windows": "docker compose -f docker/docker-compose.electron.yml --profile windows run --rm electron-windows",
+    "docker:test:macos": "docker compose -f docker/docker-compose.electron.yml --profile macos run --rm electron-macos-check",
+    "mcp:smoke:live": "node mcp/scripts/live-smoke-openai.mjs",
+    "mcp:smoke:live:strict": "node mcp/scripts/live-smoke-openai.mjs --strict",
+    "review:wcag": "node code_review/scripts/check-wcag-colors.mjs"
   },
   "keywords": [
     "pdf",
@@ -17,12 +48,49 @@
   ],
   "author": "XcaliburMoon Web Development",
   "license": "MIT",
+  "build": {
+    "appId": "org.letosangels.xcm-pdf",
+    "productName": "XCM-PDF Editor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office"
+    }
+  },
   "dependencies": {
     "@types/node": "^25.0.2",
-    "fabric": "^6.9.0",
+    "fabric": "^7.2.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.449",
     "typescript": "^5.9.3",
     "vite": "^7.2.7"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^37.7.0",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.5"
   }
 }

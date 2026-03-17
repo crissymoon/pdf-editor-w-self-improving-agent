@@ -5,7 +5,15 @@ import { toast } from './utils/toast';
 import { signaturePad } from './components/SignaturePad';
 import { mergeModal } from './components/MergeModal';
 import { textEditor } from './components/TextEditor';
+import { agentPanel } from './components/AgentPanel';
+import { createDoubleAgentArchitecture } from './agent';
+import { appendSanitizedHtml, setSanitizedHtml } from './utils/safeHtml';
+import type { AgentToolCall } from './agent';
+import type { EditorCommandRequest, EditorCommandResult } from './agent/shared/types';
 import type { Annotation, SignatureData, ImageData as ImgData } from './types';
+import { guardFile } from './utils/file-guard';
+import { HistoryStack } from './utils/history';
+import { sessionVault } from './utils/session-vault';
 
 class PDFEditor {
   private currentPage = 1;
@@ -19,6 +27,9 @@ class PDFEditor {
   private dragOffsetX = 0;
   private dragOffsetY = 0;
   private canvasScale = 1.5;
+  private history = new HistoryStack<Annotation[]>();
+  private currentFilename = 'document.pdf';
+  private autosaveTimer: number | null = null;
 
   constructor() {
     this.init();
@@ -28,11 +39,151 @@ class PDFEditor {
     this.render();
     this.setupEventListeners();
     toast.init();
+    this.setupAgentRuntime();
+    this.setupKeyboardShortcuts();
+    void this.checkSessionRecovery();
+  }
+
+  private setupAgentRuntime(): void {
+    const architecture = createDoubleAgentArchitecture({
+      run: (request) => this.runEditorCommand(request),
+    });
+
+    architecture.main.subscribeNarration((event) => {
+      toast.info(`[agent-main ${event.phase}] ${event.message}`);
+    });
+
+    architecture.dbl.subscribeNarration((event) => {
+      toast.info(`[agent-dbl ${event.phase}] ${event.message}`);
+    });
+
+    const globalWindow = window as Window & {
+      xcmPdfAgents?: {
+        listTools: (agent: 'main' | 'dbl') => ReturnType<typeof architecture.main.listTools>;
+        callTool: (agent: 'main' | 'dbl', call: AgentToolCall) => ReturnType<typeof architecture.main.callTool>;
+        getReports: (agent: 'main' | 'dbl') => ReturnType<typeof architecture.main.getReports>;
+      };
+    };
+
+    globalWindow.xcmPdfAgents = {
+      listTools: (agent) => architecture[agent].listTools(),
+      callTool: (agent, call) => architecture[agent].callTool(call),
+      getReports: (agent) => architecture[agent].getReports(),
+    };
+
+    agentPanel.init(architecture);
+  }
+
+  private async runEditorCommand(request: EditorCommandRequest): Promise<EditorCommandResult> {
+    switch (request.command) {
+      case 'open_file_picker':
+        this.openFilePicker();
+        return { ok: true, message: 'File picker opened' };
+      case 'open_merge_modal':
+        this.openMergeModal();
+        return { ok: true, message: 'Merge modal opened' };
+      case 'save_pdf':
+        await this.savePDF();
+        return { ok: true, message: 'Save command executed' };
+      case 'set_tool': {
+        const tool = String(request.arguments?.tool ?? '').trim();
+        if (!this.isSupportedTool(tool)) {
+          return { ok: false, message: `Unsupported tool: ${tool || 'empty'}` };
+        }
+        this.setActiveTool(tool);
+        return { ok: true, message: `Active tool set to ${tool}` };
+      }
+      case 'canvas_click': {
+        const x = Number(request.arguments?.x ?? NaN);
+        const y = Number(request.arguments?.y ?? NaN);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0) {
+          return { ok: false, message: 'x and y must be non-negative numbers' };
+        }
+        const applied = this.applyActiveToolAt(x, y);
+        return {
+          ok: applied,
+          message: applied ? `Applied ${this.activeTool || 'tool'} at x=${x}, y=${y}` : 'No applicable active tool selected',
+        };
+      }
+      case 'zoom_in':
+        this.zoomIn();
+        return { ok: true, message: 'Zoom in executed' };
+      case 'zoom_out':
+        this.zoomOut();
+        return { ok: true, message: 'Zoom out executed' };
+      case 'go_to_page': {
+        const pageValue = Number(request.arguments?.page ?? 0);
+        if (!Number.isInteger(pageValue) || pageValue < 1) {
+          return { ok: false, message: 'Page must be an integer greater than 0' };
+        }
+        await this.goToPage(pageValue);
+        return { ok: true, message: `Navigated to page ${pageValue}` };
+      }
+      case 'delete_selected_annotation': {
+        const before = this.annotations.length;
+        this.deleteSelectedAnnotation();
+        const deleted = this.annotations.length < before;
+        return {
+          ok: deleted,
+          message: deleted ? 'Selected annotation deleted' : 'No selected annotation to delete',
+        };
+      }
+      case 'get_status':
+        return {
+          ok: true,
+          message: 'Editor status collected',
+          data: {
+            currentPage: this.currentPage,
+            totalPages: this.totalPages,
+            zoom: this.zoom,
+            annotations: this.annotations.length,
+            activeTool: this.activeTool,
+            pdfLoaded: this.pdfData !== null,
+          },
+        };
+      default:
+        return { ok: false, message: `Unsupported command: ${request.command}` };
+    }
+  }
+
+  private isSupportedTool(tool: string): boolean {
+    return ['select', 'text', 'image', 'signature', 'highlight', 'checkbox', 'date'].includes(tool);
+  }
+
+  private applyActiveToolAt(x: number, y: number): boolean {
+    if (!this.activeTool || this.activeTool === 'select') {
+      return false;
+    }
+
+    const scaledX = x / this.zoom;
+    const scaledY = y / this.zoom;
+
+    switch (this.activeTool) {
+      case 'text':
+        this.addTextAnnotation(scaledX, scaledY);
+        return true;
+      case 'image':
+        this.addImageAnnotation(scaledX, scaledY);
+        return true;
+      case 'signature':
+        this.addSignatureAnnotation(scaledX, scaledY);
+        return true;
+      case 'checkbox':
+        this.addCheckboxAnnotation(scaledX, scaledY);
+        return true;
+      case 'date':
+        this.addDateAnnotation(scaledX, scaledY);
+        return true;
+      case 'highlight':
+        return false;
+      default:
+        return false;
+    }
   }
 
   private render(): void {
     const app = document.getElementById('app')!;
-    app.innerHTML = `
+    setSanitizedHtml(app, `
       <header class="header">
         <div class="header-brand">
           <div class="header-logo">XCM-PDF</div>
@@ -98,6 +249,15 @@ class PDFEditor {
               </button>
             </div>
 
+            <div class="toolbar-group">
+              <button class="btn btn-toolbar" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+                ${icons.undo}
+              </button>
+              <button class="btn btn-toolbar" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+                ${icons.redo}
+              </button>
+            </div>
+
             <div class="toolbar-group zoom-controls">
               <button class="btn btn-toolbar btn-icon" id="btn-zoom-out" title="Zoom Out">
                 ${icons.zoomOut}
@@ -153,7 +313,7 @@ class PDFEditor {
           <span id="status-info">XCM-PDF v1.0 - Free PDF Editor for Educational Use</span>
         </div>
       </footer>
-    `;
+    `);
   }
 
   private setupEventListeners(): void {
@@ -195,6 +355,8 @@ class PDFEditor {
     });
 
     document.getElementById('btn-delete')?.addEventListener('click', () => this.deleteSelectedAnnotation());
+  document.getElementById('btn-undo')?.addEventListener('click', () => this.undo());
+  document.getElementById('btn-redo')?.addEventListener('click', () => this.redo());
 
     document.getElementById('btn-zoom-in')?.addEventListener('click', () => this.zoomIn());
     document.getElementById('btn-zoom-out')?.addEventListener('click', () => this.zoomOut());
@@ -227,10 +389,17 @@ class PDFEditor {
   }
 
   private async loadPDFFile(file: File): Promise<void> {
-    if (file.type !== 'application/pdf') {
-      toast.error('Please select a valid PDF file');
-      return;
+    const guard = await guardFile(file);
+
+    for (const v of guard.violations) {
+      if (v.severity === 'block') {
+        toast.error(`File rejected: ${v.message}`);
+      } else {
+        toast.warning(`File warning: ${v.message}`);
+      }
     }
+
+    if (!guard.ok) return;
 
     try {
       toast.info('Loading PDF...');
@@ -246,6 +415,8 @@ class PDFEditor {
     this.pdfData = data;
     this.annotations = [];
     this.selectedAnnotation = null;
+    this.currentFilename = filename;
+    this.history.clear();
 
     await pdfService.loadPDF(data);
     this.totalPages = await pdfService.getPageCount();
@@ -263,6 +434,8 @@ class PDFEditor {
     document.getElementById('page-count')!.textContent = `${this.totalPages} pages`;
 
     toast.success('PDF loaded successfully');
+    this.updateUndoRedoButtons();
+    this.scheduleAutosave();
   }
 
   private async renderCurrentPage(): Promise<void> {
@@ -275,7 +448,7 @@ class PDFEditor {
 
   private async renderThumbnails(): Promise<void> {
     const container = document.getElementById('thumbnail-container')!;
-    container.innerHTML = '';
+    container.replaceChildren();
 
     for (let i = 1; i <= this.totalPages; i++) {
       const div = document.createElement('div');
@@ -412,8 +585,10 @@ class PDFEditor {
         },
       };
 
+      this.snapshotAnnotations();
       this.annotations.push(annotation);
       this.renderAnnotations();
+      this.scheduleAutosave();
       toast.success('Text added');
     });
   }
@@ -458,8 +633,10 @@ class PDFEditor {
             content: imgData,
           };
 
+          this.snapshotAnnotations();
           this.annotations.push(annotation);
           this.renderAnnotations();
+          this.scheduleAutosave();
           toast.success('Image added');
         };
         img.src = e.target?.result as string;
@@ -495,8 +672,10 @@ class PDFEditor {
           content: signature,
         };
 
+        this.snapshotAnnotations();
         this.annotations.push(annotation);
         this.renderAnnotations();
+        this.scheduleAutosave();
 
         if (signature.cryptoSignature) {
           toast.success('Cryptographic signature added');
@@ -520,8 +699,10 @@ class PDFEditor {
       content: 'unchecked',
     };
 
+    this.snapshotAnnotations();
     this.annotations.push(annotation);
     this.renderAnnotations();
+    this.scheduleAutosave();
     toast.success('Checkbox added');
   }
 
@@ -548,14 +729,16 @@ class PDFEditor {
       },
     };
 
+    this.snapshotAnnotations();
     this.annotations.push(annotation);
     this.renderAnnotations();
+    this.scheduleAutosave();
     toast.success('Date added');
   }
 
   private renderAnnotations(): void {
     const layer = document.getElementById('annotation-layer')!;
-    layer.innerHTML = '';
+    layer.replaceChildren();
 
     const pageAnnotations = this.annotations.filter(a => a.pageIndex === this.currentPage - 1);
 
@@ -626,14 +809,16 @@ class PDFEditor {
         el.style.justifyContent = 'center';
 
         if (annotation.content === 'checked') {
-          el.innerHTML = icons.check;
+          appendSanitizedHtml(el, icons.check);
           el.style.color = '#000';
         }
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.snapshotAnnotations();
           annotation.content = annotation.content === 'checked' ? 'unchecked' : 'checked';
           this.renderAnnotations();
+          this.scheduleAutosave();
         });
         break;
       }
@@ -681,6 +866,7 @@ class PDFEditor {
       this.selectedAnnotation = this.annotations.find(a => a.id === id) || null;
 
       if (this.selectedAnnotation) {
+        this.snapshotAnnotations();
         this.isDragging = true;
         const rect = annotationEl.getBoundingClientRect();
         this.dragOffsetX = e.clientX - rect.left;
@@ -706,17 +892,111 @@ class PDFEditor {
   }
 
   private handleMouseUp(): void {
+    if (this.isDragging) {
+      this.scheduleAutosave();
+    }
     this.isDragging = false;
   }
 
   private deleteSelectedAnnotation(): void {
     if (!this.selectedAnnotation) return;
 
+    this.snapshotAnnotations();
     this.annotations = this.annotations.filter(a => a.id !== this.selectedAnnotation!.id);
     this.selectedAnnotation = null;
     (document.getElementById('btn-delete') as HTMLButtonElement).disabled = true;
     this.renderAnnotations();
+    this.scheduleAutosave();
     toast.success('Annotation deleted');
+  }
+
+  private snapshotAnnotations(): void {
+    this.history.checkpoint(this.annotations);
+    this.updateUndoRedoButtons();
+  }
+
+  private undo(): void {
+    const previous = this.history.undo(this.annotations);
+    if (previous === null) return;
+    this.annotations = previous;
+    this.selectedAnnotation = null;
+    (document.getElementById('btn-delete') as HTMLButtonElement).disabled = true;
+    this.renderAnnotations();
+    this.updateUndoRedoButtons();
+    this.scheduleAutosave();
+  }
+
+  private redo(): void {
+    const next = this.history.redo(this.annotations);
+    if (next === null) return;
+    this.annotations = next;
+    this.selectedAnnotation = null;
+    (document.getElementById('btn-delete') as HTMLButtonElement).disabled = true;
+    this.renderAnnotations();
+    this.updateUndoRedoButtons();
+    this.scheduleAutosave();
+  }
+
+  private updateUndoRedoButtons(): void {
+    const undoBtn = document.getElementById('btn-undo') as HTMLButtonElement | null;
+    const redoBtn = document.getElementById('btn-redo') as HTMLButtonElement | null;
+    if (undoBtn) undoBtn.disabled = !this.history.canUndo;
+    if (redoBtn) redoBtn.disabled = !this.history.canRedo;
+  }
+
+  private scheduleAutosave(): void {
+    if (this.autosaveTimer !== null) {
+      window.clearTimeout(this.autosaveTimer);
+    }
+    this.autosaveTimer = window.setTimeout(() => {
+      this.autosaveTimer = null;
+      if (this.pdfData) {
+        void sessionVault.save(this.currentFilename, this.pdfData, this.annotations);
+      }
+    }, 2000);
+  }
+
+  private setupKeyboardShortcuts(): void {
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        this.undo();
+      } else if ((e.ctrlKey && e.shiftKey && e.key === 'Z') || (e.ctrlKey && e.key === 'y')) {
+        e.preventDefault();
+        this.redo();
+      }
+    });
+  }
+
+  private async checkSessionRecovery(): Promise<void> {
+    const session = await sessionVault.recover();
+    if (!session) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'recovery-bar';
+    bar.innerHTML = [
+      '<span class="recovery-bar-msg">',
+      `Unsaved session found: <strong>${session.filename}</strong>`,
+      ` &nbsp;(${new Date(session.timestamp).toLocaleTimeString()})`,
+      '</span>',
+      '<button class="recovery-bar-btn recovery-bar-btn--restore">Restore</button>',
+      '<button class="recovery-bar-btn recovery-bar-btn--dismiss">Dismiss</button>',
+    ].join('');
+
+    document.body.prepend(bar);
+
+    bar.querySelector('.recovery-bar-btn--restore')?.addEventListener('click', async () => {
+      bar.remove();
+      await this.loadPDF(session.pdfBytes, session.filename);
+      this.annotations = session.annotations;
+      this.renderAnnotations();
+      toast.success('Session restored');
+    });
+
+    bar.querySelector('.recovery-bar-btn--dismiss')?.addEventListener('click', () => {
+      bar.remove();
+      void sessionVault.clear();
+    });
   }
 
   private openMergeModal(): void {

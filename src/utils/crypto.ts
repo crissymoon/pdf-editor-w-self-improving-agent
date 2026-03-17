@@ -1,12 +1,22 @@
 import type { CryptoSignature } from '../types';
 
+const KEY_DB_NAME = 'xcm-pdf-crypto-db';
+const KEY_STORE_NAME = 'keypairs';
+const KEY_ID = 'active';
+
+interface StoredKeyPair {
+  id: string;
+  publicKey: CryptoKey;
+  privateKey: CryptoKey;
+}
+
 export class CryptoService {
   private keyPair: CryptoKeyPair | null = null;
 
   async generateKeyPair(): Promise<CryptoKeyPair> {
     this.keyPair = await window.crypto.subtle.generateKey(
       {
-        name: 'RSASSA-PKCS1-v1_5',
+        name: 'RSA-PSS',
         modulusLength: 2048,
         publicExponent: new Uint8Array([1, 0, 1]),
         hash: 'SHA-256',
@@ -23,6 +33,14 @@ export class CryptoService {
       if (stored) {
         this.keyPair = stored;
       } else {
+        const migrated = await this.migrateLegacyLocalStorageKeys();
+        if (migrated) {
+          this.keyPair = migrated;
+          await this.saveKeyPairToStorage();
+          this.clearLegacyLocalStorageKeys();
+          return this.keyPair;
+        }
+
         await this.generateKeyPair();
         await this.saveKeyPairToStorage();
       }
@@ -33,14 +51,60 @@ export class CryptoService {
   private async saveKeyPairToStorage(): Promise<void> {
     if (!this.keyPair) return;
 
-    const publicKeyJwk = await window.crypto.subtle.exportKey('jwk', this.keyPair.publicKey);
-    const privateKeyJwk = await window.crypto.subtle.exportKey('jwk', this.keyPair.privateKey);
+    const db = await this.openKeyDatabase();
 
-    localStorage.setItem('xcm-pdf-public-key', JSON.stringify(publicKeyJwk));
-    localStorage.setItem('xcm-pdf-private-key', JSON.stringify(privateKeyJwk));
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(KEY_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(KEY_STORE_NAME);
+      const value: StoredKeyPair = {
+        id: KEY_ID,
+        publicKey: this.keyPair!.publicKey,
+        privateKey: this.keyPair!.privateKey,
+      };
+
+      store.put(value);
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error ?? new Error('Failed to persist key pair'));
+      };
+    });
   }
 
   private async loadKeyPairFromStorage(): Promise<CryptoKeyPair | null> {
+    try {
+      const db = await this.openKeyDatabase();
+
+      const stored = await new Promise<StoredKeyPair | undefined>((resolve, reject) => {
+        const tx = db.transaction(KEY_STORE_NAME, 'readonly');
+        const store = tx.objectStore(KEY_STORE_NAME);
+        const request = store.get(KEY_ID);
+
+        request.onsuccess = () => resolve(request.result as StoredKeyPair | undefined);
+        request.onerror = () => reject(request.error ?? new Error('Failed to read key pair'));
+      });
+
+      db.close();
+
+      if (!stored?.publicKey || !stored?.privateKey) {
+        return null;
+      }
+
+      return {
+        publicKey: stored.publicKey,
+        privateKey: stored.privateKey,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async migrateLegacyLocalStorageKeys(): Promise<CryptoKeyPair | null> {
     const publicKeyJson = localStorage.getItem('xcm-pdf-public-key');
     const privateKeyJson = localStorage.getItem('xcm-pdf-private-key');
 
@@ -53,7 +117,7 @@ export class CryptoService {
       const publicKey = await window.crypto.subtle.importKey(
         'jwk',
         publicKeyJwk,
-        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        { name: 'RSA-PSS', hash: 'SHA-256' },
         true,
         ['verify']
       );
@@ -61,7 +125,7 @@ export class CryptoService {
       const privateKey = await window.crypto.subtle.importKey(
         'jwk',
         privateKeyJwk,
-        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        { name: 'RSA-PSS', hash: 'SHA-256' },
         true,
         ['sign']
       );
@@ -72,6 +136,27 @@ export class CryptoService {
     }
   }
 
+  private clearLegacyLocalStorageKeys(): void {
+    localStorage.removeItem('xcm-pdf-public-key');
+    localStorage.removeItem('xcm-pdf-private-key');
+  }
+
+  private async openKeyDatabase(): Promise<IDBDatabase> {
+    return await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(KEY_DB_NAME, 1);
+
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(KEY_STORE_NAME)) {
+          db.createObjectStore(KEY_STORE_NAME, { keyPath: 'id' });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error('Failed to open key database'));
+    });
+  }
+
   async signData(data: ArrayBuffer): Promise<CryptoSignature> {
     const keyPair = await this.getOrCreateKeyPair();
 
@@ -80,7 +165,7 @@ export class CryptoService {
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     const signature = await window.crypto.subtle.sign(
-      { name: 'RSASSA-PKCS1-v1_5' },
+      { name: 'RSA-PSS', saltLength: 32 },
       keyPair.privateKey,
       hashBuffer
     );
@@ -93,7 +178,7 @@ export class CryptoService {
     return {
       publicKey: JSON.stringify(publicKeyJwk),
       signature: signatureBase64,
-      algorithm: 'RSASSA-PKCS1-v1_5-SHA256',
+      algorithm: 'RSA-PSS-SHA256',
       timestamp: Date.now(),
       hash: hashHex,
     };
@@ -102,11 +187,13 @@ export class CryptoService {
   async verifySignature(data: ArrayBuffer, cryptoSig: CryptoSignature): Promise<boolean> {
     try {
       const publicKeyJwk = JSON.parse(cryptoSig.publicKey);
+      const isLegacyPkcs1 = cryptoSig.algorithm.startsWith('RSASSA-PKCS1-v1_5');
+      const keyAlgorithm = isLegacyPkcs1 ? 'RSASSA-PKCS1-v1_5' : 'RSA-PSS';
 
       const publicKey = await window.crypto.subtle.importKey(
         'jwk',
         publicKeyJwk,
-        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+        { name: keyAlgorithm, hash: 'SHA-256' },
         true,
         ['verify']
       );
@@ -116,7 +203,7 @@ export class CryptoService {
       const signatureBytes = Uint8Array.from(atob(cryptoSig.signature), c => c.charCodeAt(0));
 
       return await window.crypto.subtle.verify(
-        { name: 'RSASSA-PKCS1-v1_5' },
+        isLegacyPkcs1 ? { name: 'RSASSA-PKCS1-v1_5' } : { name: 'RSA-PSS', saltLength: 32 },
         publicKey,
         signatureBytes,
         hashBuffer

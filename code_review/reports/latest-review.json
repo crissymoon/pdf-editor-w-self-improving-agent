@@ -1,0 +1,342 @@
+{
+  "generatedAt": "2026-03-17T02:34:17.767Z",
+  "rootDir": "C:\\Users\\criss\\Desktop\\pdf-editor\\pdf-editor",
+  "profile": "strict",
+  "config": {
+    "maxFileLines": 1000,
+    "complexityThreshold": 18,
+    "maxPythonLineLength": 100,
+    "failPolicy": {
+      "maxHigh": 0,
+      "maxMedium": 5,
+      "failOnSmoke": true
+    },
+    "ignore": {
+      "code-smells": [
+        {
+          "file": "generate-example-pdf.js",
+          "messageIncludes": "Debug logging detected."
+        }
+      ]
+    }
+  },
+  "summary": {
+    "total": 38,
+    "low": 19,
+    "medium": 17,
+    "high": 2
+  },
+  "smoke": [
+    {
+      "name": "npm-run-build",
+      "success": true,
+      "output": "build passed"
+    }
+  ],
+  "findings": [
+    {
+      "check": "performance-memory",
+      "severity": "high",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 74,
+      "message": "Infinite loop pattern detected.",
+      "recommendation": "Ensure loop has explicit and tested exit conditions."
+    },
+    {
+      "check": "security",
+      "severity": "high",
+      "file": "src/components/AgentPanel.ts",
+      "line": 18,
+      "message": "Direct innerHTML assignment detected.",
+      "recommendation": "Use textContent or sanitized HTML rendering."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/config/config_test.go",
+      "line": 9,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/config/config.go",
+      "line": 55,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/protocol_test.go",
+      "line": 9,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/protocol.go",
+      "line": 32,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/protocol.go",
+      "line": 71,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/protocol.go",
+      "line": 80,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 32,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "complexity",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 272,
+      "message": "Estimated cyclomatic complexity 23 exceeds threshold 18.",
+      "recommendation": "Split into smaller functions and simplify branches."
+    },
+    {
+      "check": "complexity",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 277,
+      "message": "Estimated cyclomatic complexity 23 exceeds threshold 18.",
+      "recommendation": "Split into smaller functions and simplify branches."
+    },
+    {
+      "check": "complexity",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 282,
+      "message": "Estimated cyclomatic complexity 23 exceeds threshold 18.",
+      "recommendation": "Split into smaller functions and simplify branches."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/mcp/server.go",
+      "line": 401,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/providers/anthropic.go",
+      "line": 21,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/providers/deepseek.go",
+      "line": 21,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/providers/factory.go",
+      "line": 11,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/providers/gemini.go",
+      "line": 23,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/internal/providers/openai.go",
+      "line": 21,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "go-funcs",
+      "severity": "medium",
+      "file": "mcp/tests/smoke_test.go",
+      "line": 16,
+      "message": "Exported Go function without doc comment.",
+      "recommendation": "Add Go-style doc comments for exported symbols."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "docker/scripts/verify-macos-config.js",
+      "line": 31,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 111,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 227,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 228,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 229,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 236,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "mcp/scripts/live-smoke-openai.mjs",
+      "line": 237,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "scripts/agent/promote-dbl-to-main.mjs",
+      "line": 12,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 140,
+      "message": "WCAG AAA advisory: '.btn-primary' ratio 5.70:1 (#7c3aed on #ffffff). AAA requires 7:1.",
+      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 182,
+      "message": "WCAG AAA advisory: '.btn-toolbar.active' ratio 5.70:1 (#ffffff on #7c3aed). AAA requires 7:1.",
+      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "wcag-colors",
+      "severity": "low",
+      "file": "src/styles/main.css",
+      "line": 189,
+      "message": "WCAG AAA advisory: '.btn-danger' ratio 4.83:1 (#ffffff on #dc2626). AAA requires 7:1.",
+      "recommendation": "Raise contrast to 7:1 for full AAA compliance in high-accessibility contexts."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 20,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 25,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 32,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 33,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 39,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 46,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 51,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    },
+    {
+      "check": "code-smells",
+      "severity": "low",
+      "file": "xcm_cli/xcm.mjs",
+      "line": 56,
+      "message": "Debug logging detected.",
+      "recommendation": "Use structured logger or remove before release."
+    }
+  ]
+}

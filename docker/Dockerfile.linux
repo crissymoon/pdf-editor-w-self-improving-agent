@@ -1,0 +1,21 @@
+FROM node:20-bullseye
+
+WORKDIR /workspace
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libgtk-3-0 \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libdrm2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxrandr2 \
+    libxdamage1 \
+    xvfb \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV CI=true

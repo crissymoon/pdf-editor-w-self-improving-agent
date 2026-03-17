@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "name": "xcm",
+    "version": "1.0.0",
+    "description": "XCM command line automation for build, run, review, and git workflows"
+  },
+  "options": [
+    {
+      "name": "--help",
+      "aliases": ["-h"],
+      "summary": "Show CLI help"
+    },
+    {
+      "name": "--json-help",
+      "summary": "Print full command and option metadata as JSON"
+    },
+    {
+      "name": "--dry-run",
+      "summary": "Print command action without executing it"
+    }
+  ],
+  "commands": [
+    {
+      "name": "help",
+      "aliases": ["h", "--help", "-h"],
+      "summary": "Show CLI help",
+      "action": "help"
+    },
+    {
+      "name": "version",
+      "aliases": ["v", "--version", "-v"],
+      "summary": "Show CLI version",
+      "action": "version"
+    },
+    {
+      "name": "build",
+      "summary": "Build web assets",
+      "action": "npm",
+      "script": "build",
+      "options": [
+        {
+          "name": "--dry-run",
+          "summary": "Print resolved npm script and exit"
+        }
+      ]
+    },
+    {
+      "name": "dev:browser",
+      "aliases": ["browser", "dev"],
+      "summary": "Run Vite development server",
+      "action": "npm",
+      "script": "dev"
+    },
+    {
+      "name": "dev:electron",
+      "aliases": ["electron:dev", "run:electron:dev"],
+      "summary": "Run Electron + Vite in development",
+      "action": "npm",
+      "script": "dev:electron"
+    },
+    {
+      "name": "run:browser",
+      "aliases": ["preview", "run:web", "run browser"],
+      "summary": "Preview production web build",
+      "action": "npm",
+      "script": "preview"
+    },
+    {
+      "name": "run:electron",
+      "aliases": ["electron", "run:desktop", "run electron"],
+      "summary": "Launch Electron app",
+      "action": "npm",
+      "script": "electron"
+    },
+    {
+      "name": "code-review",
+      "aliases": ["review", "code review"],
+      "summary": "Run strict review pipeline",
+      "action": "npm",
+      "script": "review"
+    },
+    {
+      "name": "code-review:server",
+      "aliases": ["review:server", "review server", "code review server"],
+      "summary": "Run server readiness review",
+      "action": "npm",
+      "script": "review:server"
+    },
+    {
+      "name": "code-review:wcag",
+      "aliases": ["review:wcag", "review wcag", "code review wcag"],
+      "summary": "Run WCAG color contrast review",
+      "action": "npm",
+      "script": "review:wcag"
+    },
+    {
+      "name": "review:security",
+      "aliases": ["security", "security:scan", "scan"],
+      "summary": "Run security checks",
+      "action": "npm",
+      "script": "review:security"
+    },
+    {
+      "name": "pack",
+      "summary": "Build and package app for current platform",
+      "action": "npm",
+      "script": "pack"
+    },
+    {
+      "name": "pack:all",
+      "aliases": ["pack all"],
+      "summary": "Build and package app for win, mac, and linux",
+      "action": "sequence",
+      "steps": [
+        { "action": "npm", "script": "pack:win" },
+        { "action": "npm", "script": "pack:mac" },
+        { "action": "npm", "script": "pack:linux" }
+      ]
+    },
+    {
+      "name": "push",
+      "summary": "Push current branch to origin",
+      "action": "git-push-current",
+      "options": [
+        {
+          "name": "--dry-run",
+          "summary": "Print git push command and exit"
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "run",
+      "summary": "Run the application in various modes",
+      "subcommands": [
+        {
+          "name": "browser",
+          "summary": "Preview production web build",
+          "action": "npm",
+          "script": "preview"
+        },
+        {
+          "name": "electron",
+          "summary": "Launch Electron desktop app",
+          "action": "npm",
+          "script": "electron"
+        }
+      ]
+    },
+    {
+      "name": "dev",
+      "summary": "Start development servers",
+      "subcommands": [
+        {
+          "name": "browser",
+          "summary": "Run Vite development server",
+          "action": "npm",
+          "script": "dev"
+        },
+        {
+          "name": "electron",
+          "summary": "Run Electron plus Vite in development mode",
+          "action": "npm",
+          "script": "dev:electron"
+        }
+      ]
+    },
+    {
+      "name": "review",
+      "summary": "Code quality review tools",
+      "subcommands": [
+        {
+          "name": "all",
+          "aliases": ["strict"],
+          "summary": "Run strict full review pipeline",
+          "action": "npm",
+          "script": "review"
+        },
+        {
+          "name": "server",
+          "summary": "Run server readiness review",
+          "action": "npm",
+          "script": "review:server"
+        },
+        {
+          "name": "wcag",
+          "summary": "Run WCAG color contrast review",
+          "action": "npm",
+          "script": "review:wcag"
+        },
+        {
+          "name": "security",
+          "summary": "Run security checks",
+          "action": "npm",
+          "script": "review:security"
+        },
+        {
+          "name": "performance",
+          "summary": "Run performance and memory review",
+          "action": "npm",
+          "script": "review:performance"
+        },
+        {
+          "name": "complexity",
+          "summary": "Run complexity analysis",
+          "action": "npm",
+          "script": "review:complexity"
+        },
+        {
+          "name": "smells",
+          "summary": "Run code smell detection",
+          "action": "npm",
+          "script": "review:smells"
+        }
+      ]
+    },
+    {
+      "name": "safety",
+      "summary": "Security and stability helper commands",
+      "subcommands": [
+        {
+          "name": "scan",
+          "aliases": ["security", "security-scan"],
+          "summary": "Run security checks",
+          "action": "npm",
+          "script": "review:security"
+        },
+        {
+          "name": "performance",
+          "summary": "Run performance and memory review",
+          "action": "npm",
+          "script": "review:performance"
+        },
+        {
+          "name": "complexity",
+          "summary": "Run complexity analysis",
+          "action": "npm",
+          "script": "review:complexity"
+        }
+      ]
+    },
+    {
+      "name": "pack",
+      "summary": "Package the application as a desktop installer",
+      "subcommands": [
+        {
+          "name": "all",
+          "summary": "Build and package for win, mac, and linux",
+          "action": "sequence",
+          "steps": [
+            { "action": "npm", "script": "pack:win" },
+            { "action": "npm", "script": "pack:mac" },
+            { "action": "npm", "script": "pack:linux" }
+          ]
+        },
+        {
+          "name": "win",
+          "summary": "Build and package for Windows",
+          "action": "npm",
+          "script": "pack:win"
+        },
+        {
+          "name": "mac",
+          "summary": "Build and package for macOS",
+          "action": "npm",
+          "script": "pack:mac"
+        },
+        {
+          "name": "linux",
+          "summary": "Build and package for Linux",
+          "action": "npm",
+          "script": "pack:linux"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+name: xcm-pdf-electron-tests
+
+services:
+  electron-linux:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.linux
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+      - electron_linux_node_modules:/workspace/node_modules
+    environment:
+      CI: "true"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      ELECTRON_CACHE: /tmp/electron-cache
+      ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
+    command: >
+      bash -lc "npm ci && npm run pack:linux && bash docker/scripts/smoke-linux.sh"
+    profiles:
+      - linux
+      - all
+
+  electron-windows:
+    image: electronuserland/builder:wine
+    working_dir: /project
+    volumes:
+      - ../:/project
+      - electron_windows_node_modules:/project/node_modules
+    environment:
+      CI: "true"
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      ELECTRON_CACHE: /tmp/electron-cache
+      ELECTRON_BUILDER_CACHE: /tmp/electron-builder-cache
+    command: >
+      bash -lc "npm ci && npm run pack:win && bash docker/scripts/smoke-windows.sh"
+    profiles:
+      - windows
+      - all
+
+  electron-macos-check:
+    image: node:20-bullseye
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+      - electron_macos_node_modules:/workspace/node_modules
+    environment:
+      CI: "true"
+    command: >
+      bash -lc "npm ci && node docker/scripts/verify-macos-config.js && bash docker/scripts/smoke-macos-check.sh"
+    profiles:
+      - macos
+      - all
+
+volumes:
+  electron_linux_node_modules:
+  electron_windows_node_modules:
+  electron_macos_node_modules:

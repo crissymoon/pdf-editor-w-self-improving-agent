@@ -1,6 +1,7 @@
 import { icons } from '../utils/icons';
 import { cryptoService } from '../utils/crypto';
 import { toast } from '../utils/toast';
+import { setSanitizedHtml } from '../utils/safeHtml';
 import type { SignatureData, CryptoSignature } from '../types';
 
 export class SignaturePad {
@@ -22,7 +23,7 @@ export class SignaturePad {
   private createModal(): void {
     this.modal = document.createElement('div');
     this.modal.className = 'modal-overlay';
-    this.modal.innerHTML = `
+    setSanitizedHtml(this.modal, `
       <div class="modal" style="max-width: 700px;">
         <div class="modal-header">
           <h3 class="modal-title">Create Signature</h3>
@@ -72,7 +73,7 @@ export class SignaturePad {
 
           <div id="crypto-info" class="crypto-info" style="display: none;">
             <div class="crypto-info-title">Cryptographic Signature</div>
-            <div class="crypto-info-item">Algorithm: RSASSA-PKCS1-v1_5 with SHA-256</div>
+            <div class="crypto-info-item">Algorithm: RSA-PSS with SHA-256</div>
             <div class="crypto-info-item" id="key-fingerprint">Key fingerprint: Generating...</div>
           </div>
         </div>
@@ -81,7 +82,7 @@ export class SignaturePad {
           <button class="btn btn-primary" id="sig-save">Insert Signature</button>
         </div>
       </div>
-    `;
+    `);
 
     document.body.appendChild(this.modal);
     this.setupEventListeners();

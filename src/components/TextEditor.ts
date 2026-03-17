@@ -1,4 +1,5 @@
 import { icons } from '../utils/icons';
+import { setSanitizedHtml } from '../utils/safeHtml';
 
 export interface TextOptions {
   text: string;
@@ -21,7 +22,7 @@ export class TextEditor {
   private createModal(): void {
     this.modal = document.createElement('div');
     this.modal.className = 'modal-overlay';
-    this.modal.innerHTML = `
+    setSanitizedHtml(this.modal, `
       <div class="modal" style="max-width: 500px;">
         <div class="modal-header">
           <h3 class="modal-title">Add Text</h3>
@@ -78,7 +79,7 @@ export class TextEditor {
           <button class="btn btn-primary" id="text-save">Add Text</button>
         </div>
       </div>
-    `;
+    `);
 
     document.body.appendChild(this.modal);
     this.setupEventListeners();
