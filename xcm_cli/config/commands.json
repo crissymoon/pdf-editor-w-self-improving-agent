@@ -294,6 +294,40 @@
           "script": "pack:linux"
         }
       ]
+    },
+    {
+      "name": "mobile",
+      "summary": "Flutter mobile app tasks",
+      "subcommands": [
+        {
+          "name": "run",
+          "aliases": ["start"],
+          "summary": "Run Flutter app on connected device or emulator",
+          "action": "npm",
+          "script": "mobile:run"
+        },
+        {
+          "name": "build:android",
+          "aliases": ["android"],
+          "summary": "Build Flutter Android APK (release)",
+          "action": "npm",
+          "script": "mobile:build:android"
+        },
+        {
+          "name": "build:ios",
+          "aliases": ["ios"],
+          "summary": "Build Flutter iOS archive (release)",
+          "action": "npm",
+          "script": "mobile:build:ios"
+        },
+        {
+          "name": "get",
+          "aliases": ["pub-get"],
+          "summary": "Run flutter pub get inside mobile/",
+          "action": "npm",
+          "script": "mobile:get"
+        }
+      ]
     }
   ]
 }

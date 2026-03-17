@@ -41,7 +41,11 @@
     "docker:test:macos": "docker compose -f docker/docker-compose.electron.yml --profile macos run --rm electron-macos-check",
     "mcp:smoke:live": "node mcp/scripts/live-smoke-openai.mjs",
     "mcp:smoke:live:strict": "node mcp/scripts/live-smoke-openai.mjs --strict",
-    "review:wcag": "node code_review/scripts/check-wcag-colors.mjs"
+    "review:wcag": "node code_review/scripts/check-wcag-colors.mjs",
+    "mobile:get": "cd mobile && flutter pub get",
+    "mobile:run": "cd mobile && flutter run",
+    "mobile:build:android": "cd mobile && flutter build apk --release",
+    "mobile:build:ios": "cd mobile && flutter build ipa --release"
   },
   "keywords": [
     "pdf",
