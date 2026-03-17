@@ -143,6 +143,9 @@ for (const repo of repos) {
     if (getDirty(repo.dir)) {
       const state = `skip (dirty working tree on ${branch})`;
       console.log(`[skip] ${repo.name}: uncommitted changes present`);
+      if (repo.canAutoCommit && !autoCommit) {
+        console.log(`[hint] use 'sync:auto' to auto-commit and push, or commit manually first`);
+      }
       results.push({ name: repo.name, state });
       continue;
     }
