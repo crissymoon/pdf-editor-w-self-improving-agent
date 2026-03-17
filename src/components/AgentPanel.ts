@@ -1,5 +1,6 @@
 import type { DoubleAgentArchitecture } from '../agent';
 import type { AgentToolCall, NarrationEvent } from '../agent';
+import { agentChatSettings } from '../config/agent-chat-settings';
 
 type ChatRole = 'user' | 'assistant' | 'system';
 
@@ -14,13 +15,14 @@ interface ChatMessage {
 }
 
 const STORAGE_KEY = 'xcm_agent_chat_messages_v1';
-const MAX_SAVED_MESSAGES = 20;
-const CONTEXT_WINDOW = 2;
+const MAX_SAVED_MESSAGES = agentChatSettings.maxSavedMessages;
+const CONTEXT_WINDOW = agentChatSettings.contextWindowMessages;
 
 class AgentPanel {
   private panel: HTMLElement | null = null;
   private chatEl: HTMLElement | null = null;
   private inputEl: HTMLTextAreaElement | null = null;
+  private statsEl: HTMLElement | null = null;
   private currentAgent: 'main' | 'dbl' = 'main';
   private messages: ChatMessage[] = [];
 
@@ -34,7 +36,10 @@ class AgentPanel {
     this.panel.innerHTML = `
       <div class="agent-panel-header">
         <div class="agent-panel-title">Agent Chat</div>
-        <div class="agent-panel-subtitle">Simple MCP tool chat</div>
+        <div class="agent-panel-subtitle">
+          <span>Simple MCP tool chat</span>
+          <span class="agent-stats" id="agent-stats"></span>
+        </div>
       </div>
       <div class="agent-panel-body">
         <label class="agent-label" for="agent-select">Agent</label>
@@ -54,7 +59,7 @@ class AgentPanel {
           <button class="btn btn-secondary" id="agent-clear-chat">Clear</button>
         </div>
 
-        <div class="agent-hint">History keeps last 20 messages. Only last 2 are used as context for the next message.</div>
+        <div class="agent-hint">History keeps last ${MAX_SAVED_MESSAGES} messages. Only last ${CONTEXT_WINDOW} are used as context for the next message.</div>
       </div>
     `;
 
@@ -62,6 +67,7 @@ class AgentPanel {
 
     this.chatEl = this.panel.querySelector('#agent-chat');
     this.inputEl = this.panel.querySelector('#agent-chat-input') as HTMLTextAreaElement;
+    this.statsEl = this.panel.querySelector('#agent-stats');
 
     const selectEl = this.panel.querySelector('#agent-select') as HTMLSelectElement;
 
@@ -284,6 +290,14 @@ class AgentPanel {
       .join('');
 
     this.chatEl.scrollTop = this.chatEl.scrollHeight;
+    this.updateStats();
+  }
+
+  private updateStats(): void {
+    if (!this.statsEl) {
+      return;
+    }
+    this.statsEl.textContent = `context: ${CONTEXT_WINDOW} | stored: ${this.messages.length}/${MAX_SAVED_MESSAGES}`;
   }
 
   private saveMessages(): void {
