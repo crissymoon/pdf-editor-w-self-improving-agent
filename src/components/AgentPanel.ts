@@ -1,12 +1,28 @@
 import type { DoubleAgentArchitecture } from '../agent';
 import type { AgentToolCall, NarrationEvent } from '../agent';
 
+type ChatRole = 'user' | 'assistant' | 'system';
+
+interface ChatMessage {
+  id: string;
+  role: ChatRole;
+  text: string;
+  timestamp: number;
+  agent: 'main' | 'dbl';
+  toolName?: string;
+  toolArgs?: Record<string, unknown>;
+}
+
+const STORAGE_KEY = 'xcm_agent_chat_messages_v1';
+const MAX_SAVED_MESSAGES = 20;
+const CONTEXT_WINDOW = 2;
+
 class AgentPanel {
   private panel: HTMLElement | null = null;
-  private logsEl: HTMLElement | null = null;
-  private reportsEl: HTMLElement | null = null;
+  private chatEl: HTMLElement | null = null;
+  private inputEl: HTMLTextAreaElement | null = null;
   private currentAgent: 'main' | 'dbl' = 'main';
-  private selectedTool = 'editor.get_status';
+  private messages: ChatMessage[] = [];
 
   init(architecture: DoubleAgentArchitecture): void {
     if (this.panel) {
@@ -17,8 +33,8 @@ class AgentPanel {
     this.panel.className = 'agent-panel';
     this.panel.innerHTML = `
       <div class="agent-panel-header">
-        <div class="agent-panel-title">Agent Control</div>
-        <div class="agent-panel-subtitle">MCP tool runner</div>
+        <div class="agent-panel-title">Agent Chat</div>
+        <div class="agent-panel-subtitle">Simple MCP tool chat</div>
       </div>
       <div class="agent-panel-body">
         <label class="agent-label" for="agent-select">Agent</label>
@@ -27,63 +43,67 @@ class AgentPanel {
           <option value="dbl">dbl</option>
         </select>
 
-        <label class="agent-label" for="agent-tool">Tool</label>
-        <input class="agent-input" id="agent-tool" value="editor.get_status" />
+        <div class="agent-chat" id="agent-chat"></div>
 
-        <label class="agent-label" for="agent-args">Arguments JSON</label>
-        <textarea class="agent-input agent-textarea" id="agent-args">{}</textarea>
+        <label class="agent-label" for="agent-chat-input">Message</label>
+        <textarea class="agent-input agent-textarea" id="agent-chat-input" placeholder="Try: status, save pdf, zoom in, page 2, /editor.set_tool {\"tool\":\"text\"}"></textarea>
 
         <div class="agent-actions">
+          <button class="btn btn-primary" id="agent-send">Send</button>
           <button class="btn btn-secondary" id="agent-list-tools">List Tools</button>
-          <button class="btn btn-primary" id="agent-run-tool">Run Tool</button>
-          <button class="btn btn-secondary" id="agent-load-reports">Load Reports</button>
+          <button class="btn btn-secondary" id="agent-clear-chat">Clear</button>
         </div>
 
-        <div class="agent-section-title">Narration Stream</div>
-        <pre class="agent-stream" id="agent-stream"></pre>
-
-        <div class="agent-section-title">Reports</div>
-        <pre class="agent-stream" id="agent-reports"></pre>
+        <div class="agent-hint">History keeps last 20 messages. Only last 2 are used as context for the next message.</div>
       </div>
     `;
 
     document.body.appendChild(this.panel);
 
-    this.logsEl = this.panel.querySelector('#agent-stream');
-    this.reportsEl = this.panel.querySelector('#agent-reports');
+    this.chatEl = this.panel.querySelector('#agent-chat');
+    this.inputEl = this.panel.querySelector('#agent-chat-input') as HTMLTextAreaElement;
 
     const selectEl = this.panel.querySelector('#agent-select') as HTMLSelectElement;
-    const toolEl = this.panel.querySelector('#agent-tool') as HTMLInputElement;
-    const argsEl = this.panel.querySelector('#agent-args') as HTMLTextAreaElement;
+
+    this.messages = this.loadMessages();
+    this.renderMessages();
 
     selectEl.addEventListener('change', () => {
       this.currentAgent = selectEl.value === 'dbl' ? 'dbl' : 'main';
-      this.log(`Switched to agent ${this.currentAgent}`);
+      this.appendMessage({
+        role: 'system',
+        text: `Switched to agent ${this.currentAgent}`,
+      });
     });
 
-    toolEl.addEventListener('input', () => {
-      this.selectedTool = toolEl.value.trim();
+    this.inputEl?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        void this.sendChatMessage(architecture);
+      }
     });
 
     this.panel.querySelector('#agent-list-tools')?.addEventListener('click', () => {
       const result = architecture[this.currentAgent].listTools();
-      this.log(JSON.stringify(result, null, 2));
+      const toolNames = result.tools.map((tool) => tool.name).join(', ');
+      this.appendMessage({
+        role: 'assistant',
+        text: `Available tools: ${toolNames}`,
+      });
     });
 
-    this.panel.querySelector('#agent-run-tool')?.addEventListener('click', async () => {
-      const call = this.parseCall(this.selectedTool, argsEl.value);
-      if (!call) {
-        return;
-      }
-      const result = await architecture[this.currentAgent].callTool(call);
-      this.log(JSON.stringify(result, null, 2));
+    this.panel.querySelector('#agent-send')?.addEventListener('click', () => {
+      void this.sendChatMessage(architecture);
     });
 
-    this.panel.querySelector('#agent-load-reports')?.addEventListener('click', () => {
-      const reports = architecture[this.currentAgent].getReports();
-      if (this.reportsEl) {
-        this.reportsEl.textContent = JSON.stringify(reports, null, 2);
-      }
+    this.panel.querySelector('#agent-clear-chat')?.addEventListener('click', () => {
+      this.messages = [];
+      this.saveMessages();
+      this.renderMessages();
+      this.appendMessage({
+        role: 'system',
+        text: 'Chat history cleared',
+      });
     });
 
     architecture.main.subscribeNarration((event) => {
@@ -94,40 +114,210 @@ class AgentPanel {
       this.onNarration(event);
     });
 
-    this.log('Agent panel initialized');
+    this.appendMessage({
+      role: 'system',
+      text: 'Agent chat initialized',
+    });
   }
 
-  private parseCall(name: string, argsRaw: string): AgentToolCall | null {
-    if (!name) {
-      this.log('Tool name is required');
-      return null;
+  private async sendChatMessage(architecture: DoubleAgentArchitecture): Promise<void> {
+    const raw = (this.inputEl?.value ?? '').trim();
+    if (!raw) {
+      return;
+    }
+
+    this.inputEl!.value = '';
+    this.appendMessage({ role: 'user', text: raw });
+
+    const context = this.getContextMessages(CONTEXT_WINDOW);
+    const call = this.resolveCallFromMessage(raw, context);
+
+    if (!call) {
+      this.appendMessage({
+        role: 'assistant',
+        text: 'Could not map that message to a tool. Try: status, save pdf, zoom in, page 2, or /editor.set_tool {"tool":"text"}.',
+      });
+      return;
     }
 
     try {
-      const parsed = JSON.parse(argsRaw || '{}') as Record<string, unknown>;
-      return {
-        name,
-        arguments: parsed,
-      };
-    } catch {
-      this.log('Arguments JSON is invalid');
-      return null;
+      const result = await architecture[this.currentAgent].callTool(call);
+      const output = result.content.map((item) => item.text).join('\n');
+      this.appendMessage({
+        role: 'assistant',
+        text: output,
+        toolName: call.name,
+        toolArgs: call.arguments,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown tool error';
+      this.appendMessage({
+        role: 'assistant',
+        text: `Tool execution failed: ${message}`,
+      });
     }
+  }
+
+  private resolveCallFromMessage(raw: string, context: ChatMessage[]): AgentToolCall | null {
+    const message = raw.trim();
+    const lower = message.toLowerCase();
+
+    // Explicit tool call syntax: /tool.name {"arg":"value"}
+    if (message.startsWith('/')) {
+      const firstSpace = message.indexOf(' ');
+      const name = (firstSpace === -1 ? message.slice(1) : message.slice(1, firstSpace)).trim();
+      const argsRaw = firstSpace === -1 ? '{}' : message.slice(firstSpace + 1).trim();
+      try {
+        const parsed = JSON.parse(argsRaw || '{}') as Record<string, unknown>;
+        return { name, arguments: parsed };
+      } catch {
+        return null;
+      }
+    }
+
+    const pageMatch = lower.match(/page\s+(\d+)/);
+    if (pageMatch) {
+      return {
+        name: 'editor.go_to_page',
+        arguments: { page: Number(pageMatch[1]) },
+      };
+    }
+
+    const toolMatch = lower.match(/(set|use|switch)\s+(tool\s+)?(select|text|image|signature|highlight|checkbox|date)/);
+    if (toolMatch) {
+      return {
+        name: 'editor.set_tool',
+        arguments: { tool: toolMatch[3] },
+      };
+    }
+
+    if (lower.includes('open') && lower.includes('merge')) {
+      return { name: 'editor.open_merge_modal', arguments: {} };
+    }
+    if (lower.includes('open') && (lower.includes('file') || lower.includes('pdf'))) {
+      return { name: 'editor.open_file_picker', arguments: {} };
+    }
+    if (lower.includes('save')) {
+      return { name: 'editor.save_pdf', arguments: {} };
+    }
+    if (lower.includes('zoom in')) {
+      return { name: 'editor.zoom_in', arguments: {} };
+    }
+    if (lower.includes('zoom out')) {
+      return { name: 'editor.zoom_out', arguments: {} };
+    }
+    if (lower.includes('delete')) {
+      return { name: 'editor.delete_selected_annotation', arguments: {} };
+    }
+    if (lower.includes('status')) {
+      return { name: 'editor.get_status', arguments: {} };
+    }
+
+    if (/(again|repeat|same)/.test(lower)) {
+      const previousTool = [...context].reverse().find((entry) => entry.toolName);
+      if (previousTool?.toolName) {
+        return {
+          name: previousTool.toolName,
+          arguments: previousTool.toolArgs ?? {},
+        };
+      }
+    }
+
+    return null;
   }
 
   private onNarration(event: NarrationEvent): void {
-    const line = `${new Date(event.timestamp).toLocaleTimeString()} [${event.agent}] ${event.phase}: ${event.message}`;
-    this.log(line);
-  }
-
-  private log(message: string): void {
-    if (!this.logsEl) {
+    if (event.phase !== 'error') {
       return;
     }
-    const current = this.logsEl.textContent ?? '';
-    const next = current.length > 0 ? `${current}\n${message}` : message;
-    this.logsEl.textContent = next;
-    this.logsEl.scrollTop = this.logsEl.scrollHeight;
+    const line = `[${event.agent}] ${event.phase}: ${event.message}`;
+    this.appendMessage({ role: 'system', text: line, agent: event.agent });
+  }
+
+  private appendMessage(input: {
+    role: ChatRole;
+    text: string;
+    agent?: 'main' | 'dbl';
+    toolName?: string;
+    toolArgs?: Record<string, unknown>;
+  }): void {
+    const message: ChatMessage = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      role: input.role,
+      text: input.text,
+      timestamp: Date.now(),
+      agent: input.agent ?? this.currentAgent,
+      toolName: input.toolName,
+      toolArgs: input.toolArgs,
+    };
+
+    this.messages.push(message);
+    if (this.messages.length > MAX_SAVED_MESSAGES) {
+      this.messages = this.messages.slice(-MAX_SAVED_MESSAGES);
+    }
+
+    this.saveMessages();
+    this.renderMessages();
+  }
+
+  private getContextMessages(limit: number): ChatMessage[] {
+    const withoutCurrentSystemNoise = this.messages.filter((entry) => entry.role !== 'system');
+    return withoutCurrentSystemNoise.slice(-limit);
+  }
+
+  private renderMessages(): void {
+    if (!this.chatEl) {
+      return;
+    }
+
+    this.chatEl.innerHTML = this.messages
+      .map((entry) => {
+        const roleLabel = entry.role === 'assistant' ? 'Agent' : entry.role === 'user' ? 'You' : 'System';
+        const safeText = this.escapeHtml(entry.text);
+        return `
+          <div class="agent-chat-message agent-chat-message-${entry.role}">
+            <div class="agent-chat-meta">${roleLabel} · ${entry.agent}</div>
+            <div class="agent-chat-bubble">${safeText}</div>
+          </div>
+        `;
+      })
+      .join('');
+
+    this.chatEl.scrollTop = this.chatEl.scrollHeight;
+  }
+
+  private saveMessages(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.messages.slice(-MAX_SAVED_MESSAGES)));
+    } catch {
+      // best-effort persistence only
+    }
+  }
+
+  private loadMessages(): ChatMessage[] {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        return [];
+      }
+      const parsed = JSON.parse(raw) as ChatMessage[];
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed.slice(-MAX_SAVED_MESSAGES);
+    } catch {
+      return [];
+    }
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/\n/g, '<br />');
   }
 }
 
