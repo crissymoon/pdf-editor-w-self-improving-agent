@@ -205,6 +205,16 @@ export class PDFService {
     return await mergedPdf.save();
   }
 
+  async createBlankPDF(pageCount: number = 1): Promise<Uint8Array> {
+    const safePageCount = Math.max(1, Math.floor(pageCount));
+    const doc = await PDFDocument.create();
+    for (let i = 0; i < safePageCount; i++) {
+      // Letter size (8.5in x 11in) in PDF points.
+      doc.addPage([612, 792]);
+    }
+    return await doc.save();
+  }
+
   private hexToRgb(hex: string): { r: number; g: number; b: number } {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result

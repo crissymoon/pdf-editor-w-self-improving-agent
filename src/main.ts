@@ -82,6 +82,15 @@ class PDFEditor {
       case 'open_merge_modal':
         this.openMergeModal();
         return { ok: true, message: 'Merge modal opened' };
+      case 'create_blank_pdf': {
+        const pagesRaw = Number(request.arguments?.pages ?? 1);
+        const pages = Number.isFinite(pagesRaw) ? Math.max(1, Math.floor(pagesRaw)) : 1;
+        const createdBytes = await pdfService.createBlankPDF(pages);
+        const buffer = Uint8Array.from(createdBytes).buffer as ArrayBuffer;
+        const fileLabel = pages === 1 ? 'blank-1-page.pdf' : `blank-${pages}-pages.pdf`;
+        await this.loadPDF(buffer, fileLabel);
+        return { ok: true, message: `Created blank PDF with ${pages} page(s)` };
+      }
       case 'save_pdf':
         await this.savePDF();
         return { ok: true, message: 'Save command executed' };

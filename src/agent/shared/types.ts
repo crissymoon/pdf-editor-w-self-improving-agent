@@ -3,6 +3,7 @@ export type AgentRole = 'main' | 'dbl';
 export type EditorCommandName =
   | 'open_file_picker'
   | 'open_merge_modal'
+  | 'create_blank_pdf'
   | 'save_pdf'
   | 'set_tool'
   | 'canvas_click'

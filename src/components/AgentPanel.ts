@@ -215,6 +215,14 @@ class AgentPanel {
     if (lower.includes('open') && lower.includes('merge')) {
       return { name: 'editor.open_merge_modal', arguments: {} };
     }
+    const createMatch = lower.match(/(create|new)\s+(blank\s+)?pdf(?:\s+(?:with\s+)?)?(\d+)\s*(?:page|pages)?/);
+    if (createMatch) {
+      const pages = createMatch[3] ? Number(createMatch[3]) : 1;
+      return { name: 'editor.create_blank_pdf', arguments: { pages: Math.max(1, pages || 1) } };
+    }
+    if ((lower.includes('create') || lower.includes('new')) && lower.includes('pdf')) {
+      return { name: 'editor.create_blank_pdf', arguments: { pages: 1 } };
+    }
     if (lower.includes('open') && (lower.includes('file') || lower.includes('pdf'))) {
       return { name: 'editor.open_file_picker', arguments: {} };
     }

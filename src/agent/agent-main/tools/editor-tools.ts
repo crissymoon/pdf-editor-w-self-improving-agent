@@ -29,6 +29,17 @@ export function createMainAgentTools(runner: EditorCommandRunner): AgentToolDefi
       () => runner.run({ command: 'open_merge_modal' }),
     ),
     buildTool(
+      'editor.create_blank_pdf',
+      'Create a new blank PDF document.',
+      {
+        type: 'object',
+        properties: {
+          pages: { type: 'number', minimum: 1 },
+        },
+      },
+      (argumentsMap) => runner.run({ command: 'create_blank_pdf', arguments: argumentsMap }),
+    ),
+    buildTool(
       'editor.save_pdf',
       'Save the current PDF with annotations.',
       { type: 'object', properties: {} },
