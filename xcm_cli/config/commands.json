@@ -131,7 +131,7 @@
     {
       "name": "push:shared",
       "aliases": ["push shared", "sync:push", "push:both"],
-      "summary": "Push this repo and linked shared repo when clean and ahead",
+      "summary": "Auto-commit primary repo changes, then push this repo and linked shared repo",
       "action": "npm",
       "script": "push:shared"
     },
