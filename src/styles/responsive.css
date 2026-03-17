@@ -1,0 +1,447 @@
+/**
+ * Responsive Design Styles
+ * Media queries and responsive layout utilities
+ */
+
+/* Safe area support for notched devices */
+:root {
+  --safe-area-inset-top: 0px;
+  --safe-area-inset-right: 0px;
+  --safe-area-inset-bottom: 0px;
+  --safe-area-inset-left: 0px;
+
+  /* Responsive spacing */
+  --spacing-mobile: 0.5rem;
+  --spacing-tablet: 0.75rem;
+  --spacing-desktop: 1rem;
+
+  /* Responsive font sizes */
+  --font-size-small-mobile: 0.75rem;
+  --font-size-small-tablet: 0.875rem;
+  --font-size-small-desktop: 0.875rem;
+
+  --font-size-base-mobile: 0.875rem;
+  --font-size-base-tablet: 1rem;
+  --font-size-base-desktop: 1rem;
+
+  --font-size-large-mobile: 1rem;
+  --font-size-large-tablet: 1.125rem;
+  --font-size-large-desktop: 1.25rem;
+
+  --font-size-xl-mobile: 1.25rem;
+  --font-size-xl-tablet: 1.5rem;
+  --font-size-xl-desktop: 1.875rem;
+}
+
+/* Mobile first approach - Mobile styles */
+.device-mobile {
+  --current-spacing: var(--spacing-mobile);
+  --current-font-size-small: var(--font-size-small-mobile);
+  --current-font-size-base: var(--font-size-base-mobile);
+  --current-font-size-large: var(--font-size-large-mobile);
+  --current-font-size-xl: var(--font-size-xl-mobile);
+}
+
+/* Tablet styles - medium screens */
+@media (min-width: 640px) {
+  .device-tablet,
+  .device-desktop {
+    --current-spacing: var(--spacing-tablet);
+    --current-font-size-small: var(--font-size-small-tablet);
+    --current-font-size-base: var(--font-size-base-tablet);
+    --current-font-size-large: var(--font-size-large-tablet);
+    --current-font-size-xl: var(--font-size-xl-tablet);
+  }
+
+  :root:not(.device-mobile) {
+    --current-spacing: var(--spacing-tablet);
+    --current-font-size-base: var(--font-size-base-tablet);
+  }
+}
+
+/* Desktop styles - large screens */
+@media (min-width: 1024px) {
+  .device-desktop {
+    --current-spacing: var(--spacing-desktop);
+    --current-font-size-small: var(--font-size-small-desktop);
+    --current-font-size-base: var(--font-size-base-desktop);
+    --current-font-size-large: var(--font-size-large-desktop);
+    --current-font-size-xl: var(--font-size-xl-desktop);
+  }
+
+  :root:not(.device-mobile):not(.device-tablet) {
+    --current-spacing: var(--spacing-desktop);
+    --current-font-size-base: var(--font-size-base-desktop);
+  }
+}
+
+/* Orientation-specific styles */
+.orientation-portrait {
+  /* Portrait styles */
+}
+
+.orientation-landscape {
+  /* Landscape styles */
+}
+
+/* Touch device - larger tap targets */
+.has-touch button,
+.has-touch a,
+.has-touch input[type='button'],
+.has-touch input[type='submit'] {
+  min-height: 44px; /* iOS minimum tap target */
+  min-width: 44px;
+  padding: 0.75rem 1rem;
+}
+
+.has-touch {
+  /* Disable hover styles on touch devices */
+}
+
+.has-touch:hover,
+.has-touch:active {
+  outline: none;
+}
+
+/* Responsive layout utilities */
+
+/* Hide/show based on device type */
+@media (max-width: 639px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}
+
+.show-mobile {
+  display: none !important;
+}
+
+@media (max-width: 639px) {
+  .show-mobile {
+    display: block !important;
+  }
+}
+
+.show-tablet {
+  display: none !important;
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .show-tablet {
+    display: block !important;
+  }
+}
+
+.show-desktop {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .show-desktop {
+    display: block !important;
+  }
+}
+
+/* Responsive container */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 var(--safe-area-inset-left) 0 var(--safe-area-inset-right);
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    padding: 0 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+}
+
+/* Responsive grid */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+/* Responsive flex */
+.responsive-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .responsive-flex {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+}
+
+/* Text sizing utilities */
+.text-small {
+  font-size: var(--current-font-size-small);
+}
+
+.text-base {
+  font-size: var(--current-font-size-base);
+}
+
+.text-large {
+  font-size: var(--current-font-size-large);
+}
+
+.text-xl {
+  font-size: var(--current-font-size-xl);
+}
+
+/* Responsive padding/margin */
+.p-responsive {
+  padding: var(--current-spacing);
+}
+
+.px-responsive {
+  padding-left: var(--current-spacing);
+  padding-right: var(--current-spacing);
+}
+
+.py-responsive {
+  padding-top: var(--current-spacing);
+  padding-bottom: var(--current-spacing);
+}
+
+.m-responsive {
+  margin: var(--current-spacing);
+}
+
+.mx-responsive {
+  margin-left: var(--current-spacing);
+  margin-right: var(--current-spacing);
+}
+
+.my-responsive {
+  margin-top: var(--current-spacing);
+  margin-bottom: var(--current-spacing);
+}
+
+/* Responsive modal/dialog */
+.responsive-modal {
+  position: fixed;
+  top: var(--safe-area-inset-top);
+  left: var(--safe-area-inset-left);
+  right: var(--safe-area-inset-right);
+  bottom: var(--safe-area-inset-bottom);
+  z-index: 1000;
+}
+
+@media (min-width: 640px) {
+  .responsive-modal {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 600px;
+    height: auto;
+    max-height: 90vh;
+    border-radius: 0.5rem;
+  }
+}
+
+/* Prevent text selection on touch devices for better UX */
+.has-touch .no-select-touch {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Responsive input sizing */
+.has-touch input,
+.has-touch textarea,
+.has-touch select {
+  font-size: 16px; /* Prevents zoom on iOS */
+  padding: 0.75rem;
+}
+
+/* Responsive sidebar/drawer */
+.responsive-sidebar {
+  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.responsive-sidebar.open {
+  display: block;
+}
+
+.responsive-sidebar-content {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 75%;
+  height: 100%;
+  background: white;
+  overflow-y: auto;
+  padding-top: var(--safe-area-inset-top);
+  padding-left: var(--safe-area-inset-left);
+}
+
+@media (min-width: 640px) {
+  .responsive-sidebar {
+    display: block;
+    position: static;
+    width: auto;
+    height: auto;
+    background: transparent;
+  }
+
+  .responsive-sidebar.open {
+    display: block;
+  }
+
+  .responsive-sidebar-content {
+    position: static;
+    width: auto;
+    height: auto;
+    background: transparent;
+    overflow: visible;
+    padding: 0;
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 639px) {
+  body {
+    font-size: var(--font-size-base-mobile);
+  }
+
+  h1 {
+    font-size: var(--font-size-xl-mobile);
+  }
+
+  h2 {
+    font-size: var(--font-size-large-mobile);
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: var(--font-size-base-mobile);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  body {
+    font-size: var(--font-size-base-tablet);
+  }
+
+  h1 {
+    font-size: var(--font-size-xl-tablet);
+  }
+
+  h2 {
+    font-size: var(--font-size-large-tablet);
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: var(--font-size-base-tablet);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    font-size: var(--font-size-base-desktop);
+  }
+
+  h1 {
+    font-size: var(--font-size-xl-desktop);
+  }
+
+  h2 {
+    font-size: var(--font-size-large-desktop);
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: var(--font-size-base-desktop);
+  }
+}
+
+/* Responsive aspect ratio */
+.aspect-ratio-container {
+  position: relative;
+  width: 100%;
+}
+
+.aspect-ratio-container.aspect-16-9::before {
+  content: '';
+  display: block;
+  width: 100%;
+  padding-bottom: 56.25%;
+}
+
+.aspect-ratio-container.aspect-4-3::before {
+  content: '';
+  display: block;
+  width: 100%;
+  padding-bottom: 75%;
+}
+
+.aspect-ratio-container.aspect-1-1::before {
+  content: '';
+  display: block;
+  width: 100%;
+  padding-bottom: 100%;
+}
+
+.aspect-ratio-container > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}

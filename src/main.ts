@@ -1,7 +1,9 @@
 import './styles/main.css';
+import './styles/responsive.css';
 import { icons } from './utils/icons';
 import { pdfService } from './utils/pdf';
 import { toast } from './utils/toast';
+import { responsive, setupSafeAreaVariables } from './utils/responsive';
 import { signaturePad } from './components/SignaturePad';
 import { mergeModal } from './components/MergeModal';
 import { textEditor } from './components/TextEditor';
@@ -36,6 +38,11 @@ class PDFEditor {
   }
 
   private init(): void {
+    // Initialize responsive design system
+    responsive.setupViewportMeta();
+    setupSafeAreaVariables();
+    responsive.applyResponsiveClass(document.documentElement);
+    
     this.render();
     this.setupEventListeners();
     toast.init();
