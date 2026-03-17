@@ -45,60 +45,119 @@ function getDirty(repoDir) {
   return (runGit(repoDir, ['status', '--porcelain']).stdout || '').trim().length > 0;
 }
 
+function hasUpstream(repoDir) {
+  return runGit(repoDir, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], { allowFail: true }).status === 0;
+}
+
 function getAheadCount(repoDir) {
-  const probe = runGit(repoDir, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], { allowFail: true });
-  if (probe.status !== 0) {
+  if (!hasUpstream(repoDir)) {
     return null;
   }
   const ahead = (runGit(repoDir, ['rev-list', '--count', '@{u}..HEAD']).stdout || '0').trim();
   return Number.parseInt(ahead, 10) || 0;
 }
 
+function getPendingCommitLines(repoDir, limit = 5) {
+  if (!hasUpstream(repoDir)) {
+    const lines = (runGit(repoDir, ['log', '--oneline', '-n', String(limit)], { allowFail: true }).stdout || '')
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+    return lines;
+  }
+
+  const lines = (runGit(repoDir, ['log', '--oneline', `@{u}..HEAD`, '-n', String(limit)], { allowFail: true }).stdout || '')
+    .trim()
+    .split('\n')
+    .filter(Boolean);
+  return lines;
+}
+
 function push(repoDir, branch) {
-  const hasUpstream = runGit(repoDir, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], { allowFail: true }).status === 0;
-  if (hasUpstream) {
+  if (hasUpstream(repoDir)) {
     return runGit(repoDir, ['push']);
   }
   return runGit(repoDir, ['push', '-u', 'origin', branch]);
 }
 
+function summarizeResult(result) {
+  return `[summary] ${result.name}: ${result.state}`;
+}
+
+const results = [];
 let hadError = false;
+
+console.log('[shared-sync] preflight checks');
 
 for (const repo of repos) {
   try {
     if (!hasRepo(repo.dir)) {
+      const state = `skip (not a git repo at ${repo.dir})`;
       console.log(`[skip] ${repo.name}: not a git repo at ${repo.dir}`);
+      results.push({ name: repo.name, state });
       continue;
     }
 
     const branch = getBranch(repo.dir);
     if (!branch) {
+      const state = 'skip (detached HEAD)';
       console.log(`[skip] ${repo.name}: detached HEAD`);
+      results.push({ name: repo.name, state });
       continue;
     }
 
-    const dirty = getDirty(repo.dir);
-    if (dirty) {
+    if (getDirty(repo.dir)) {
+      const state = `skip (dirty working tree on ${branch})`;
       console.log(`[skip] ${repo.name}: uncommitted changes present`);
+      results.push({ name: repo.name, state });
       continue;
     }
 
     const ahead = getAheadCount(repo.dir);
+    const pending = getPendingCommitLines(repo.dir, 5);
+
     if (ahead === 0) {
+      const state = `ok (up to date on ${branch})`;
       console.log(`[ok] ${repo.name}: already up to date on ${branch}`);
+      results.push({ name: repo.name, state });
       continue;
     }
 
-    push(repo.dir, branch);
     if (ahead === null) {
-      console.log(`[push] ${repo.name}: pushed ${branch} and set upstream`);
+      console.log(`[plan] ${repo.name}: no upstream configured on ${branch}; push will set upstream`);
     } else {
+      console.log(`[plan] ${repo.name}: ${ahead} commit(s) pending on ${branch}`);
+    }
+
+    if (pending.length > 0) {
+      console.log(`[plan] ${repo.name}: pending commits (top ${pending.length})`);
+      for (const line of pending) {
+        console.log(`  - ${line}`);
+      }
+    }
+
+    push(repo.dir, branch);
+
+    if (ahead === null) {
+      const state = `pushed (set upstream for ${branch})`;
+      console.log(`[push] ${repo.name}: pushed and set upstream on ${branch}`);
+      results.push({ name: repo.name, state });
+    } else {
+      const state = `pushed (${ahead} commit(s) on ${branch})`;
       console.log(`[push] ${repo.name}: pushed ${ahead} commit(s) on ${branch}`);
+      results.push({ name: repo.name, state });
     }
   } catch (error) {
     hadError = true;
-    console.error(`[error] ${repo.name}: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[error] ${repo.name}: ${message}`);
+    results.push({ name: repo.name, state: `error (${message})` });
   }
+}
+
+console.log('[shared-sync] summary');
+for (const result of results) {
+  console.log(summarizeResult(result));
 }
 
 if (hadError) {

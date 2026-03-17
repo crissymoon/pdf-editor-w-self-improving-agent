@@ -23,6 +23,8 @@ node xcm_cli/xcm.mjs code-review
 node xcm_cli/xcm.mjs code review
 node xcm_cli/xcm.mjs code review server
 node xcm_cli/xcm.mjs push
+node xcm_cli/xcm.mjs push:shared
+node xcm_cli/xcm.mjs sync:shared
 ```
 
 ## Groups

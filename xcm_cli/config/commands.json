@@ -134,6 +134,13 @@
       "summary": "Push this repo and linked shared repo when clean and ahead",
       "action": "npm",
       "script": "push:shared"
+    },
+    {
+      "name": "sync:shared",
+      "aliases": ["sync shared", "sync:all", "push:sync"],
+      "summary": "Preflight-check, preview pending commits, push both repos, then print summary",
+      "action": "npm",
+      "script": "sync:shared"
     }
   ],
   "groups": [
